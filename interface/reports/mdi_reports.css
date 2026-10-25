@@ -1,0 +1,721 @@
+/*
+ * MDItek Reports — Shared Theme
+ * Cohesive light + purple clinical palette
+ * Matches Flow Board (patient_tracker.php) and Calendar redesigns
+ *
+ * Deploy to: /interface/reports/mdi_reports.css
+ * Link after Header::setupHeader() in each report page
+ */
+
+/* ─── Google Font ──────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+/* ─── Design Tokens ────────────────────────────────────────────────── */
+:root {
+    --navy:        #1e0a3c;
+    --navy-mid:    #7c3aed;
+    --navy-light:  #e8e0f5;
+    --navy-pale:   #f5f2fc;
+    --gold:        #9588e8;
+    --white:       #ffffff;
+    --bg:          #f2eff9;
+    --border:      #d8d0ed;
+    --text:        #1a1028;
+    --text-mid:    #4a3f60;
+    --text-muted:  #8a7aa0;
+    --radius:      10px;
+    --radius-sm:   7px;
+    --shadow:      0 2px 12px rgba(30,10,60,.10);
+}
+
+/* ─── Base Reset ───────────────────────────────────────────────────── */
+* { font-family: 'Montserrat', sans-serif !important; box-sizing: border-box; }
+
+body,
+body.body_top {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+}
+
+/* ─── Page Title Bar ───────────────────────────────────────────────── */
+span.title {
+    display: block !important;
+    background: var(--navy) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: .3px !important;
+    padding: 12px 20px !important;
+    border-bottom: 3px solid var(--gold) !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+}
+
+/* ─── Filter / Parameter Panel ─────────────────────────────────────── */
+#report_parameters {
+    background: var(--white) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 14px 20px !important;
+    margin: 0 !important;
+}
+
+/* Flatten nested tables — they're used purely for layout */
+#report_parameters table,
+#report_parameters table.tableonly,
+#report_parameters table.text,
+#report_parameters table.w-100 {
+    border: none !important;
+    background: transparent !important;
+    margin: 0 !important;
+    width: auto !important;
+    border-collapse: collapse !important;
+}
+
+#report_parameters td,
+#report_parameters th {
+    padding: 4px 8px 4px 0 !important;
+    vertical-align: middle !important;
+    border: none !important;
+    background: transparent !important;
+    white-space: nowrap;
+}
+
+/* The button-column divider cell */
+#report_parameters td[style*="border-left"],
+#report_parameters td.h-100 {
+    border-left: 1px solid var(--border) !important;
+    padding-left: 18px !important;
+    vertical-align: middle !important;
+}
+
+/* Field labels */
+#report_parameters .col-form-label,
+#report_parameters td.label_custom,
+#report_parameters label.col-form-label {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .8px !important;
+    color: var(--text-muted) !important;
+    padding-right: 5px !important;
+    white-space: nowrap;
+}
+
+/* Text inputs & selects */
+#report_parameters input[type="text"],
+#report_parameters input[type="date"],
+#report_parameters select,
+#report_parameters .form-control {
+    height: 32px !important;
+    padding: 0 10px !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    background: var(--white) !important;
+    box-shadow: none !important;
+    outline: none !important;
+    transition: border-color .15s !important;
+    min-width: 110px;
+}
+#report_parameters input:focus,
+#report_parameters select:focus {
+    border-color: var(--navy-mid) !important;
+}
+
+/* Checkboxes */
+#report_parameters input[type="checkbox"] {
+    accent-color: var(--navy) !important;
+    width: 14px !important;
+    height: 14px !important;
+    cursor: pointer;
+}
+#report_parameters .checkbox label,
+#report_parameters label {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    color: var(--text-mid) !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: normal;
+}
+
+/* ─── Buttons ──────────────────────────────────────────────────────── */
+#report_parameters .btn,
+#report_parameters a.btn {
+    height: 32px !important;
+    padding: 0 16px !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+    transition: background .15s, border-color .15s, color .15s !important;
+    border-width: 1.5px !important;
+    border-style: solid !important;
+}
+
+/* Primary — Submit / Save */
+#report_parameters .btn-primary,
+#report_parameters .btn-save,
+#report_parameters a.btn-primary,
+#report_parameters a.btn-save {
+    background: var(--navy) !important;
+    border-color: var(--navy) !important;
+    color: #fff !important;
+}
+#report_parameters .btn-primary:hover,
+#report_parameters .btn-save:hover {
+    background: var(--navy-mid) !important;
+    border-color: var(--navy-mid) !important;
+    color: #fff !important;
+}
+
+/* Secondary — Print / Refresh / Export / Search etc. */
+#report_parameters .btn-secondary,
+#report_parameters .btn-refresh,
+#report_parameters .btn-print,
+#report_parameters .btn-transmit,
+#report_parameters .btn-search,
+#report_parameters a.btn-secondary,
+#report_parameters a.btn-refresh,
+#report_parameters a.btn-print,
+#report_parameters a.btn-transmit,
+#report_parameters a.btn-search {
+    background: var(--white) !important;
+    border-color: var(--border) !important;
+    color: var(--text-mid) !important;
+}
+#report_parameters .btn-secondary:hover,
+#report_parameters .btn-refresh:hover,
+#report_parameters .btn-print:hover,
+#report_parameters .btn-transmit:hover,
+#report_parameters a.btn-secondary:hover,
+#report_parameters a.btn-refresh:hover,
+#report_parameters a.btn-print:hover,
+#report_parameters a.btn-transmit:hover {
+    background: var(--navy-pale) !important;
+    border-color: var(--navy-mid) !important;
+    color: var(--navy) !important;
+}
+
+/* btn-group spacing */
+#report_parameters .btn-group { gap: 6px !important; }
+#report_parameters .btn-group .btn { margin: 0 !important; border-radius: var(--radius-sm) !important; }
+
+/* ─── Print date range strip ───────────────────────────────────────── */
+#report_parameters_daterange {
+    background: var(--navy-pale);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-mid);
+}
+
+/* ─── "Please input criteria" placeholder ──────────────────────────── */
+div.text {
+    padding: 32px 20px;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+/* ─── Results wrapper ──────────────────────────────────────────────── */
+#report_results,
+div#report_results {
+    padding: 18px 20px 32px !important;
+    background: var(--bg) !important;
+}
+
+/* Remove jumbotron styling that some files add */
+#report_results.jumbotron {
+    border-radius: 0 !important;
+    border: none !important;
+    background: var(--bg) !important;
+}
+
+/* ─── Table Shell ──────────────────────────────────────────────────── */
+#report_results .table-responsive {
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border) !important;
+}
+
+#report_results table,
+#report_results table.table,
+table.mymaintable {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: var(--white) !important;
+    border-radius: var(--radius) !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow) !important;
+    border: 1px solid var(--border) !important;
+    margin: 0 !important;
+}
+
+/* ─── Table Head ───────────────────────────────────────────────────── */
+#report_results table thead,
+#report_results table thead.thead-light,
+#report_results table tr.head,
+#report_results table tr.thead-light,
+table.mymaintable thead,
+table.mymaintable tr.head {
+    background: var(--navy) !important;
+}
+
+#report_results table thead th,
+#report_results table thead td,
+#report_results table thead.thead-light th,
+#report_results table thead.thead-light td,
+#report_results table tr.head th,
+#report_results table tr.head td,
+#report_results table tr.thead-light th,
+#report_results table tr.thead-light td,
+table.mymaintable thead th,
+table.mymaintable thead td,
+table.mymaintable tr.head th,
+table.mymaintable tr.head td {
+    background: var(--navy) !important;
+    color: rgba(255,255,255,.80) !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .65px !important;
+    padding: 11px 14px !important;
+    border: none !important;
+    border-right: 1px solid rgba(255,255,255,.07) !important;
+    white-space: nowrap;
+    vertical-align: middle !important;
+    text-align: left !important;
+}
+
+/* First header cell gets the gold accent + full-white text */
+#report_results table thead th:first-child,
+#report_results table thead.thead-light th:first-child,
+#report_results table tr.head td:first-child,
+#report_results table tr.thead-light th:first-child,
+table.mymaintable thead th:first-child,
+table.mymaintable tr.head td:first-child {
+    border-left: 4px solid var(--gold) !important;
+    color: #fff !important;
+}
+
+#report_results table thead th:last-child,
+#report_results table thead.thead-light th:last-child,
+table.mymaintable thead th:last-child {
+    border-right: none !important;
+}
+
+/* Sortable column links in thead */
+#report_results thead a,
+#report_results tr.head a,
+#report_results tr.thead-light a {
+    color: rgba(255,255,255,.85) !important;
+    text-decoration: none !important;
+    font-weight: 700 !important;
+}
+#report_results thead a:hover { color: var(--gold) !important; }
+
+/* ─── Table Body ───────────────────────────────────────────────────── */
+#report_results table tbody tr,
+table.mymaintable tbody tr {
+    border-bottom: 1px solid var(--border) !important;
+    transition: background .1s;
+}
+#report_results table tbody tr:last-child,
+table.mymaintable tbody tr:last-child { border-bottom: none !important; }
+
+#report_results table tbody tr:nth-child(odd),
+table.mymaintable tbody tr:nth-child(odd)  { background: var(--white) !important; }
+
+#report_results table tbody tr:nth-child(even),
+table.mymaintable tbody tr:nth-child(even) { background: var(--navy-pale) !important; }
+
+#report_results table tbody tr:hover,
+table.mymaintable tbody tr:hover           { background: var(--navy-light) !important; }
+
+/* Kill any hardcoded bgcolor/background on rows */
+#report_results table tbody tr[bgcolor],
+#report_results table tbody tr[style*="background"] {
+    background: inherit !important;
+}
+
+/* Body cells */
+#report_results table tbody td,
+#report_results table tbody td.detail,
+#report_results table tbody td.text,
+#report_results table tbody td.bold,
+table.mymaintable tbody td {
+    padding: 9px 14px !important;
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    color: var(--text) !important;
+    border: none !important;
+    border-right: 1px solid var(--border) !important;
+    vertical-align: middle !important;
+}
+#report_results table tbody td:last-child,
+table.mymaintable tbody td:last-child { border-right: none !important; }
+
+/* Bold text in cells */
+#report_results table .bold,
+#report_results table td.font-weight-bold,
+#report_results table td b,
+#report_results table td strong {
+    font-weight: 700 !important;
+    color: var(--navy) !important;
+}
+
+/* Links inside results */
+#report_results table a {
+    color: var(--navy-mid) !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+}
+#report_results table a:hover {
+    color: var(--navy) !important;
+    text-decoration: underline !important;
+}
+
+/* ─── Totals / Summary Rows ────────────────────────────────────────── */
+#report_results table tr.report_totals td,
+#report_results table tr.report_totals th,
+#report_results table tr.bg-white td {
+    background: var(--navy-light) !important;
+    border-top: 2px solid var(--navy) !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    color: var(--navy) !important;
+    padding: 10px 14px !important;
+}
+
+/* Section sub-header rows (e.g. date groupings) */
+#report_results table tr.dehead td,
+#report_results table tr.detail td.bold {
+    background: var(--navy-pale) !important;
+    font-weight: 700 !important;
+    color: var(--navy-mid) !important;
+    border-top: 1px solid var(--border) !important;
+}
+
+/* ─── Superbill / Patient Data Sections ────────────────────────────── */
+#superbill_patientdata h1,
+#superbill_insurancedata h1,
+#superbill_billingdata h1 {
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .7px !important;
+    color: #fff !important;
+    background: var(--navy) !important;
+    border: none !important;
+    border-left: 4px solid var(--gold) !important;
+    padding: 9px 14px !important;
+    margin: 12px 0 0 !important;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+}
+#superbill_insurancedata h2 {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: var(--text-mid) !important;
+    background: var(--navy-pale) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 6px 14px !important;
+    margin: 0 !important;
+}
+#superbill_description {
+    padding: 10px 20px 0 !important;
+    font-size: 11px !important;
+    color: var(--text-mid) !important;
+    font-style: italic;
+}
+#superbill_results {
+    padding: 12px 20px !important;
+}
+#superbill_results table.table {
+    margin-top: 8px !important;
+}
+
+/* ─── Pat Ledger specific ──────────────────────────────────────────── */
+/* The ledger uses a jumbotron wrapper and its own heading rows */
+#report_results table tr th.head,
+#report_results table tr td.head {
+    background: var(--navy) !important;
+    color: #fff !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .6px !important;
+    padding: 10px 14px !important;
+    border-right: 1px solid rgba(255,255,255,.1) !important;
+}
+#report_results table tr.dehead th,
+#report_results table tr.dehead td {
+    background: var(--navy-pale) !important;
+    color: var(--navy-mid) !important;
+    font-weight: 700 !important;
+    font-size: 10.5px !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* ─── Daily Summary Report — inline table in results ───────────────── */
+#report_results table table {
+    box-shadow: none !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    margin-bottom: 12px !important;
+}
+
+/* ─── Patient list creation — multi-select, filter pills ───────────── */
+#report_parameters select[multiple],
+#report_parameters select[size] {
+    height: auto !important;
+    min-height: 70px !important;
+    padding: 4px 8px !important;
+}
+
+/* ─── Inline description text (superbill / services) ───────────────── */
+.pagebreak {
+    border-top: 2px dashed var(--border) !important;
+    margin: 24px 0 !important;
+}
+
+/* ─── Print Overrides ──────────────────────────────────────────────── */
+@media print {
+    span.title,
+    #report_parameters { display: none !important; }
+    body { background: #fff !important; }
+
+    #report_results,
+    div#report_results { background: #fff !important; padding: 0 !important; }
+
+    #report_results table,
+    table.mymaintable {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+    #report_results table thead th,
+    #report_results table tr.head td {
+        background: #1e0a3c !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    #report_results table tbody tr:nth-child(even) {
+        background: #f5f2fc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    #report_results table tbody tr:nth-child(odd) { background: #fff !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Additional patterns from zip batch (amc_tracking, appointments,
+   collections, destroyed_drugs, inventory_*, clinical_reports, etc.)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── audit_log_tamper_report: bare table used as filter form ──────── */
+body > form > table,
+body > FORM > table {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    width: 100%;
+}
+body > form > table td,
+body > FORM > table td {
+    padding: 5px 8px !important;
+    vertical-align: middle !important;
+    border: none !important;
+    font-size: 11px !important;
+}
+/* Wrap div #report_parameters covers GET-form pages too */
+#report_parameters FORM,
+#report_parameters form { margin: 0 !important; }
+
+/* ── font.title fallback (audit_log uses <font class="title">) ──── */
+font.title {
+    display: block !important;
+    background: var(--navy) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    padding: 12px 20px !important;
+    border-bottom: 3px solid var(--gold) !important;
+}
+
+/* ── DataTables (destroyed_drugs_report) ─────────────────────────── */
+table#mymaintable.display thead th,
+table#mymaintable.display thead td {
+    background: var(--navy) !important;
+    color: rgba(255,255,255,.80) !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .65px !important;
+    padding: 11px 14px !important;
+    border-bottom: none !important;
+}
+/* DataTables sort icons tint */
+table#mymaintable thead .sorting::after,
+table#mymaintable thead .sorting_asc::after,
+table#mymaintable thead .sorting_desc::after { color: var(--gold) !important; }
+
+table#mymaintable tbody tr:nth-child(odd)  { background: var(--white) !important; }
+table#mymaintable tbody tr:nth-child(even) { background: var(--navy-pale) !important; }
+table#mymaintable tbody tr:hover           { background: var(--navy-light) !important; }
+table#mymaintable tbody td {
+    padding: 9px 14px !important;
+    font-size: 11px !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* DataTables pagination bar */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: var(--navy) !important;
+    border-color: var(--navy) !important;
+    color: #fff !important;
+    border-radius: var(--radius-sm) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--navy-pale) !important;
+    border-color: var(--border) !important;
+    color: var(--navy) !important;
+}
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    font-size: 11px !important;
+    color: var(--text-mid) !important;
+}
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+    height: 30px !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 11px !important;
+    padding: 0 8px !important;
+    color: var(--text) !important;
+}
+
+/* ── inventory_list / inventory_activity / inventory_transactions ─── */
+/* These use bare <thead> without class — covered by:
+   #report_results table thead th (already in base CSS)
+   plus this fallback for thead without thead-light class: */
+#report_results table thead th:not([class]),
+#report_results table thead td:not([class]) {
+    background: var(--navy) !important;
+    color: rgba(255,255,255,.80) !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .65px !important;
+    padding: 11px 14px !important;
+    border: none !important;
+    border-right: 1px solid rgba(255,255,255,.07) !important;
+}
+
+/* inventory_list: span in header td */
+#report_results table thead td span {
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+}
+
+/* ── collections_report: inline bgcolor on PHP echo tr rows ─────── */
+/* Handled by #report_results table tbody tr[bgcolor] { background: inherit !important }
+   already in base CSS. The !important alternating zebra overrides it. */
+
+/* ── clinical_reports: complex multi-section layout ─────────────── */
+/* Uses div#report_parameters with nested accordion-like sections */
+#report_parameters .panel,
+#report_parameters .card {
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    margin-bottom: 8px !important;
+}
+#report_parameters .panel-heading,
+#report_parameters .card-header {
+    background: var(--navy-pale) !important;
+    padding: 7px 12px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--navy) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* ── amc_tracking: sortable column links in thead ─────────────────── */
+#report_results table thead th a,
+#report_results table tr.thead-light th a {
+    color: rgba(255,255,255,.85) !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+}
+#report_results table thead th a:hover { color: var(--gold) !important; }
+
+/* ── prescriptions / non_reported: inline table-level styles ──────── */
+#report_results table[style*="width"] { width: 100% !important; }
+
+/* ── rwt_2023_report / background_services: minimal pages ─────────── */
+/* These have simple result tables — base CSS already covers them */
+
+/* ── external_data: uses Bootstrap table-sm inside panels ─────────── */
+.table-sm thead th,
+.table-sm thead td {
+    background: var(--navy) !important;
+    color: rgba(255,255,255,.80) !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .5px !important;
+    padding: 8px 10px !important;
+    border: none !important;
+}
+.table-sm tbody tr:nth-child(odd)  { background: var(--white) !important; }
+.table-sm tbody tr:nth-child(even) { background: var(--navy-pale) !important; }
+.table-sm tbody td {
+    font-size: 10.5px !important;
+    padding: 7px 10px !important;
+    border-color: var(--border) !important;
+}
+
+/* ── patient_edu_web_lookup: simple search form ───────────────────── */
+body > form { padding: 0 !important; }
+
+/* ── Alerts row (audit_log table validation message) ─────────────── */
+tr.alert td {
+    background: #fff3cd !important;
+    color: #856404 !important;
+    border: 1px solid #ffc107 !important;
+    padding: 10px 14px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+/* ── Print additions for new files ───────────────────────────────── */
+@media print {
+    table#mymaintable thead th { background: #1e0a3c !important; }
+    .dataTables_wrapper .dataTables_paginate,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_length { display: none !important; }
+}

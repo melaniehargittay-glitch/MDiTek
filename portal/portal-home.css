@@ -1,0 +1,597 @@
+/*
+ * portal-home.css  —  Patient Portal Light Redesign
+ * Target: garza.mditekehr.com/portal/home.php
+ *
+ * Install: add before </head> in home.php
+ *   <link rel="stylesheet" href="/portal/portal-home.css">
+ *
+ * Structure mapped from actual page source:
+ *   body > .container-lg
+ *     nav#topNav.navbar.navbar-expand-lg.navbar-light.bg-light.sticky-top
+ *       .navbar-brand > img
+ *       #nav > ul.navbar-nav
+ *         li.nav-item.dropdown  (TEST PATIENT)
+ *           ul.dropdown-menu > li > a.dropdown-item[href="..."] > i.fas
+ *         li.nav-item.dropdown  (Reports)
+ *         li.nav-item.dropdown  (Accountings)
+ *         li.nav-item           (Chat — a.nav-link[href="#messagescard"])
+ *     section#cardgroup.accordion
+ *       #lists > .card > header.card-header.bg-primary.text-light
+ *       #reportcard, #profilecard, #documentscard, #secure-msgs-card
+ *       #appointmentcard > .container-fluid
+ *       #paymentcard, #messagescard, #downloadcard, #ledgercard
+ */
+
+/* ══════════════════════════════════════════════
+   FONT
+══════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ══════════════════════════════════════════════
+   TOKENS
+══════════════════════════════════════════════ */
+:root {
+    --p-bg:          #f0f2f8;
+    --p-white:       #ffffff;
+    --p-border:      #e2e5f0;
+    --p-border2:     #d1d5e8;
+    --p-text:        #1e1b4b;
+    --p-text2:       #374151;
+    --p-muted:       #6b7280;
+    --p-muted2:      #9ca3af;
+    --p-radius:      12px;
+
+    --p-violet:      #7c3aed;
+    --p-violet-mid:  #6d28d9;
+    --p-violet-lt:   #ede9fe;
+    --p-violet-xlt:  #f5f3ff;
+
+    --p-sky:         #0284c7;
+    --p-sky-lt:      #e0f2fe;
+
+    --p-amber:       #b45309;
+    --p-amber-lt:    #fef3c7;
+
+    --p-emerald:     #047857;
+    --p-emerald-lt:  #d1fae5;
+
+    --p-rose:        #be123c;
+    --p-rose-lt:     #ffe4e6;
+
+    --p-indigo:      #4338ca;
+    --p-indigo-lt:   #e0e7ff;
+
+    --p-slate:       #475569;
+    --p-slate-lt:    #f1f5f9;
+
+    --p-red:         #dc2626;
+    --p-red-lt:      #fee2e2;
+
+    --p-teal:        #0f766e;
+    --p-teal-lt:     #ccfbf1;
+
+    --p-shadow-sm:   0 1px 3px rgba(99,102,241,.08), 0 1px 2px rgba(0,0,0,.04);
+    --p-shadow:      0 4px 18px rgba(99,102,241,.11), 0 1px 4px rgba(0,0,0,.05);
+    --p-shadow-md:   0 12px 40px rgba(99,102,241,.15), 0 2px 8px rgba(0,0,0,.07);
+}
+
+/* ══════════════════════════════════════════════
+   BASE
+══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif !important;
+    background: var(--p-bg) !important;
+    color: var(--p-text2) !important;
+}
+
+/* Outer wrapper — keep it flush */
+.container-lg {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+}
+
+/* ══════════════════════════════════════════════
+   NAVBAR  #topNav
+══════════════════════════════════════════════ */
+#topNav.navbar {
+    background: rgba(255,255,255,.93) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid var(--p-border) !important;
+    box-shadow: 0 1px 0 rgba(99,102,241,.07), var(--p-shadow-sm) !important;
+    padding-top: .45rem !important;
+    padding-bottom: .45rem !important;
+    /* sticky-top already set in HTML */
+}
+
+/* Logo glow */
+#topNav .navbar-brand img {
+    filter: drop-shadow(0 2px 6px rgba(124,58,237,.2)) !important;
+    transition: filter .2s !important;
+}
+#topNav .navbar-brand img:hover {
+    filter: drop-shadow(0 3px 14px rgba(124,58,237,.45)) !important;
+}
+
+/* Hamburger */
+#topNav .navbar-toggler {
+    border: 1.5px solid var(--p-border2) !important;
+    border-radius: 8px !important;
+}
+#topNav .navbar-toggler:focus {
+    box-shadow: 0 0 0 3px rgba(124,58,237,.15) !important;
+}
+
+/* ── Top-level nav links ── */
+#topNav .navbar-nav .nav-link {
+    color: var(--p-muted) !important;
+    font-size: .79rem !important;
+    font-weight: 600 !important;
+    padding: 6px 11px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: background .13s, color .13s !important;
+}
+#topNav .navbar-nav .nav-link:hover,
+#topNav .navbar-nav .nav-link:focus {
+    background: var(--p-violet-xlt) !important;
+    color: var(--p-violet) !important;
+}
+
+/* Hide original FA icons on nav links */
+#topNav .navbar-nav .nav-link > i { display: none !important; }
+
+/* ── Inject icon badges on top-level nav items via ::before ── */
+/* TEST PATIENT dropdown */
+#topNav .nav-item:nth-child(1) > .nav-link::before {
+    content: '';
+    display: inline-flex; width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    background: var(--p-violet-lt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 20c0-4 3.6-7 8-7s8 3 8 7'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+/* Reports */
+#topNav .nav-item:nth-child(2) > .nav-link::before {
+    content: '';
+    display: inline-flex; width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    background: var(--p-sky-lt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.2'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+/* Accountings */
+#topNav .nav-item:nth-child(3) > .nav-link::before {
+    content: '';
+    display: inline-flex; width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    background: var(--p-amber-lt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2.2'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'/%3E%3Cline x1='2' y1='10' x2='22' y2='10'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+/* Chat */
+#topNav .nav-item:nth-child(4) > .nav-link::before {
+    content: '';
+    display: inline-flex; width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+    background: var(--p-teal-lt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.2'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+/* ── Dropdown menus ── */
+#topNav .dropdown-menu {
+    background: var(--p-white) !important;
+    border: 1px solid var(--p-border) !important;
+    border-radius: var(--p-radius) !important;
+    box-shadow: var(--p-shadow-md) !important;
+    padding: .45rem !important;
+    min-width: 225px !important;
+    margin-top: 5px !important;
+    animation: menuSlide .18s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes menuSlide {
+    from { opacity: 0; transform: translateY(-7px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Hide FA icons inside dropdown items */
+#topNav .dropdown-item > i { display: none !important; }
+
+/* Dropdown item base */
+#topNav .dropdown-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: .48rem .7rem !important;
+    border-radius: 8px !important;
+    font-size: .79rem !important;
+    font-weight: 500 !important;
+    color: var(--p-text2) !important;
+    background: transparent !important;
+    transition: background .12s !important;
+    white-space: nowrap !important;
+}
+#topNav .dropdown-item:hover,
+#topNav .dropdown-item:focus {
+    background: var(--p-bg) !important;
+    color: var(--p-text) !important;
+}
+
+/* ── Coloured icon badge per dropdown item — keyed on href ── */
+#topNav .dropdown-item::before {
+    content: '';
+    display: inline-flex;
+    width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 13px 13px;
+}
+
+/* PATIENT MENU */
+/* My Profile */
+.dropdown-item[href="#profilecard"]::before {
+    background-color: var(--p-violet-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 20c0-4 3.6-7 8-7s8 3 8 7'/%3E%3C/svg%3E") !important;
+}
+/* My Messages */
+.dropdown-item[href="#secure-msgs-card"]::before {
+    background-color: var(--p-sky-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.2'%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3Cpolyline points='2 7 12 13 22 7'/%3E%3C/svg%3E") !important;
+}
+/* My Documents */
+.dropdown-item[href="#documentscard"]::before {
+    background-color: var(--p-amber-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2.2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cline x1='16' y1='13' x2='8' y2='13'/%3E%3Cline x1='16' y1='17' x2='8' y2='17'/%3E%3C/svg%3E") !important;
+}
+/* My Dashboard */
+.dropdown-item[href="#lists"]::before {
+    background-color: var(--p-emerald-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2.2'%3E%3Crect x='3' y='3' width='7' height='7' rx='1'/%3E%3Crect x='14' y='3' width='7' height='7' rx='1'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1'/%3E%3Crect x='14' y='14' width='7' height='7' rx='1'/%3E%3C/svg%3E") !important;
+}
+/* My Signature */
+.dropdown-item[href="#openSignModal"]::before {
+    background-color: var(--p-rose-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23be123c' stroke-width='2.2'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z'/%3E%3C/svg%3E") !important;
+}
+/* My Appointments */
+.dropdown-item[href="#appointmentcard"]::before {
+    background-color: var(--p-indigo-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234338ca' stroke-width='2.2'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3C/svg%3E") !important;
+}
+/* Change Credentials */
+.dropdown-item[href="javascript:changeCredentials(event)"]::before {
+    background-color: var(--p-slate-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E") !important;
+}
+/* Logout */
+.dropdown-item[href="logout.php"]::before {
+    background-color: var(--p-red-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2.2'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E") !important;
+}
+.dropdown-item[href="logout.php"] {
+    color: var(--p-red) !important;
+    border-top: 1px solid var(--p-border) !important;
+    margin-top: 3px !important;
+    padding-top: .58rem !important;
+}
+.dropdown-item[href="logout.php"]:hover { background: var(--p-red-lt) !important; }
+
+/* REPORTS MENU */
+.dropdown-item[href*="ccda_gateway.php?action=view"]::before {
+    background-color: var(--p-sky-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/%3E%3C/svg%3E") !important;
+}
+.dropdown-item[href*="ccda_gateway.php?action=dl"]::before {
+    background-color: var(--p-emerald-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2.2'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E") !important;
+}
+.dropdown-item[href="#reportcard"]::before {
+    background-color: var(--p-violet-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.2'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E") !important;
+}
+.dropdown-item[href="#downloadcard"]::before {
+    background-color: var(--p-amber-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2.2'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E") !important;
+}
+
+/* ACCOUNTINGS MENU */
+.dropdown-item[href="#ledgercard"]::before {
+    background-color: var(--p-indigo-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234338ca' stroke-width='2.2'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E") !important;
+}
+.dropdown-item[href="#paymentcard"]::before {
+    background-color: var(--p-emerald-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2.2'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'/%3E%3Cline x1='2' y1='10' x2='22' y2='10'/%3E%3C/svg%3E") !important;
+}
+
+/* ══════════════════════════════════════════════
+   ACCORDION / SECTION CARDS  #cardgroup
+══════════════════════════════════════════════ */
+#cardgroup {
+    padding: 1.4rem 1rem 3rem !important;
+}
+
+/* All cards inside */
+#cardgroup .card {
+    border: 1px solid var(--p-border) !important;
+    border-radius: var(--p-radius) !important;
+    box-shadow: var(--p-shadow-sm) !important;
+    background: var(--p-white) !important;
+    overflow: hidden !important;
+    margin-bottom: 1rem !important;
+    transition: box-shadow .2s !important;
+}
+#cardgroup .card:hover { box-shadow: var(--p-shadow) !important; }
+
+/* Coloured top stripe — override .bg-primary */
+#cardgroup .card-header,
+#cardgroup header.card-header {
+    background: var(--p-white) !important;
+    color: var(--p-text) !important;
+    border-bottom: 1px solid var(--p-border) !important;
+    border-radius: 0 !important;
+    padding: .8rem 1.1rem !important;
+    font-size: .83rem !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    position: relative !important;
+}
+/* The colour stripe lives as ::before on the header */
+#cardgroup .card-header::before,
+#cardgroup header.card-header::before {
+    content: '';
+    display: inline-flex;
+    width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+}
+
+/* Top gradient bar above every card */
+#cardgroup .card::before {
+    content: '' !important;
+    display: block !important;
+    height: 3px !important;
+    width: 100% !important;
+    background: linear-gradient(90deg, var(--p-violet), #a78bfa) !important;
+}
+
+/* Card body */
+#cardgroup .card-body,
+#cardgroup .card-body.bg-light {
+    background: var(--p-white) !important;
+}
+
+/* ── Per-section header icons ── */
+/* Dashboard list — Medications */
+#lists .card:nth-child(1) header.card-header::before {
+    background-color: var(--p-violet-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.2'%3E%3Crect x='3' y='3' width='7' height='18' rx='3.5'/%3E%3Crect x='14' y='3' width='7' height='18' rx='3.5' transform='rotate(45 17.5 12)'/%3E%3C/svg%3E");
+}
+/* Allergy */
+#lists .card:nth-child(2) header.card-header::before {
+    background-color: var(--p-rose-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23be123c' stroke-width='2.2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
+}
+/* Issues */
+#lists .card:nth-child(3) header.card-header::before {
+    background-color: var(--p-sky-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.2'%3E%3Cpath d='M9 11l3 3L22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E");
+}
+/* Amendments */
+#lists .card:nth-child(4) header.card-header::before {
+    background-color: var(--p-amber-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2.2'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+}
+/* Lab Results */
+#lists .card:nth-child(5) header.card-header::before {
+    background-color: var(--p-emerald-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2.2'%3E%3Cpath d='M6 2v6l-2 4a6 6 0 1 0 16 0l-2-4V2'/%3E%3Cline x1='6' y1='2' x2='18' y2='2'/%3E%3Ccircle cx='12' cy='16' r='1'/%3E%3C/svg%3E");
+}
+
+/* Reports card */
+#reportcard header.card-header::before {
+    background-color: var(--p-sky-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.2'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
+}
+/* Payment */
+#paymentcard header.card-header::before {
+    background-color: var(--p-emerald-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2.2'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'/%3E%3Cline x1='2' y1='10' x2='22' y2='10'/%3E%3C/svg%3E");
+}
+/* Secure Chat */
+#messagescard header.card-header::before {
+    background-color: var(--p-teal-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.2'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
+}
+/* Download */
+#downloadcard header.card-header::before {
+    background-color: var(--p-amber-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2.2'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E");
+}
+/* Ledger */
+#ledgercard header.card-header::before {
+    background-color: var(--p-indigo-lt);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234338ca' stroke-width='2.2'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+}
+
+/* ══════════════════════════════════════════════
+   APPOINTMENTS  #appointmentcard
+══════════════════════════════════════════════ */
+#appointmentcard h3.text-center {
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    color: var(--p-text) !important;
+    letter-spacing: -.01em !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Individual appointment cards */
+#appointmentcard .row .card {
+    border-radius: var(--p-radius) !important;
+    border: 1px solid var(--p-border) !important;
+    box-shadow: var(--p-shadow-sm) !important;
+    transition: box-shadow .18s, transform .18s !important;
+    margin: .4rem !important;
+}
+#appointmentcard .row .card:hover {
+    box-shadow: var(--p-shadow) !important;
+    transform: translateY(-2px) !important;
+}
+#appointmentcard .row .card .card-header {
+    background: var(--p-bg) !important;
+    border-bottom: 1px solid var(--p-border) !important;
+    padding: .5rem .85rem !important;
+    min-height: 0 !important;
+}
+#appointmentcard .row .card .card-header::before {
+    display: none !important; /* suppress generic icon on appt cards */
+}
+#appointmentcard .row .card::before {
+    background: linear-gradient(90deg, var(--p-indigo), #818cf8) !important;
+}
+
+/* Edit icon */
+#appointmentcard .fa-edit {
+    color: var(--p-violet) !important;
+    background: var(--p-violet-lt) !important;
+    padding: 5px !important;
+    border-radius: 6px !important;
+    transition: background .13s !important;
+}
+#appointmentcard .fa-edit:hover { background: var(--p-violet) !important; color: #fff !important; }
+
+/* Appointment body text */
+#appointmentcard .card-body p {
+    font-size: .8rem !important;
+    line-height: 1.75 !important;
+    color: var(--p-text2) !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+}
+
+/* Schedule new appointment button */
+#appointmentcard .btn-primary.btn-block {
+    border-radius: var(--p-radius) !important;
+    padding: .72rem !important;
+    font-size: .8rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .03em !important;
+    background: linear-gradient(135deg, var(--p-violet), var(--p-violet-mid)) !important;
+    border-color: var(--p-violet) !important;
+    box-shadow: 0 3px 12px rgba(124,58,237,.28) !important;
+    transition: all .15s !important;
+}
+#appointmentcard .btn-primary.btn-block:hover {
+    box-shadow: 0 5px 20px rgba(124,58,237,.42) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* ══════════════════════════════════════════════
+   PROFILE  #profilecard (loaded via get_profile.php)
+══════════════════════════════════════════════ */
+#profilereport .table > tbody > tr > td {
+    padding: .65rem 1rem !important;
+    border-color: var(--p-border) !important;
+    font-size: .8rem !important;
+    vertical-align: middle !important;
+    background: transparent !important;
+    color: var(--p-text2) !important;
+}
+#profilereport .table > tbody > tr:hover > td {
+    background: var(--p-violet-xlt) !important;
+}
+#profilereport .demographics td:first-child {
+    color: var(--p-muted) !important;
+    font-size: .67rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .07em !important;
+    white-space: nowrap !important;
+}
+
+/* ══════════════════════════════════════════════
+   GLOBAL BUTTONS
+══════════════════════════════════════════════ */
+.btn {
+    border-radius: 8px !important;
+    font-size: .77rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .02em !important;
+    transition: all .15s !important;
+    font-family: inherit !important;
+}
+.btn-primary {
+    background: var(--p-violet) !important;
+    border-color: var(--p-violet) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(124,58,237,.25) !important;
+}
+.btn-primary:hover, .btn-primary:focus {
+    background: var(--p-violet-mid) !important;
+    border-color: var(--p-violet-mid) !important;
+    box-shadow: 0 4px 16px rgba(124,58,237,.38) !important;
+    transform: translateY(-1px) !important;
+    color: #fff !important;
+}
+.btn-secondary, .btn-default {
+    background: var(--p-white) !important;
+    border-color: var(--p-border2) !important;
+    color: var(--p-slate) !important;
+}
+.btn-secondary:hover, .btn-default:hover {
+    border-color: var(--p-violet) !important;
+    color: var(--p-violet) !important;
+    background: var(--p-violet-xlt) !important;
+}
+.btn-success  { background: var(--p-emerald) !important; border-color: var(--p-emerald) !important; color: #fff !important; }
+.btn-danger   { background: var(--p-red)     !important; border-color: var(--p-red)     !important; color: #fff !important; }
+.btn-info     { background: var(--p-sky)     !important; border-color: var(--p-sky)     !important; color: #fff !important; }
+
+/* ══════════════════════════════════════════════
+   ALERTS
+══════════════════════════════════════════════ */
+.alert { border-radius: var(--p-radius) !important; font-size: .8rem !important; border: none !important; }
+.alert-warning {
+    background: var(--p-amber-lt) !important;
+    border-left: 4px solid var(--p-amber) !important;
+    color: var(--p-amber) !important;
+}
+.alert-info    { background: var(--p-sky-lt)     !important; border-left: 4px solid var(--p-sky)     !important; color: var(--p-sky)     !important; }
+.alert-success { background: var(--p-emerald-lt) !important; border-left: 4px solid var(--p-emerald) !important; color: var(--p-emerald) !important; }
+.alert-danger  { background: var(--p-red-lt)     !important; border-left: 4px solid var(--p-red)     !important; color: var(--p-red)     !important; }
+
+/* ══════════════════════════════════════════════
+   FORM CONTROLS
+══════════════════════════════════════════════ */
+.form-control, input[type="text"], input[type="email"],
+input[type="password"], input[type="button"], select, textarea {
+    border: 1.5px solid var(--p-border) !important;
+    border-radius: 8px !important;
+    font-size: .8rem !important;
+    color: var(--p-text) !important;
+    background: var(--p-white) !important;
+    font-family: inherit !important;
+    transition: border-color .17s, box-shadow .17s !important;
+}
+.form-control:focus, input:focus, select:focus, textarea:focus {
+    border-color: var(--p-violet) !important;
+    box-shadow: 0 0 0 3px rgba(124,58,237,.13) !important;
+    outline: none !important;
+}
+
+/* ══════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--p-violet-lt); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--p-violet); }
+
+/* ══════════════════════════════════════════════
+   SECTION OPEN ANIMATION
+══════════════════════════════════════════════ */
+#cardgroup .collapse.show,
+#cardgroup .collapsing {
+    animation: sectionFade .28s ease both;
+}
+@keyframes sectionFade {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: none; }
+}

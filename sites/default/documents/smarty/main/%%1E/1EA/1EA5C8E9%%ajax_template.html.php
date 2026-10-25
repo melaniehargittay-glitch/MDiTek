@@ -1,0 +1,1796 @@
+<?php /* Smarty version 2.6.33, created on 2026-08-10 10:57:57
+         compiled from default/views/day/ajax_template.html */ ?>
+<?php require_once(SMARTY_CORE_DIR . 'core.load_plugins.php');
+smarty_core_load_plugins(array('plugins' => array(array('function', 'config_load', 'default/views/day/ajax_template.html', 11, false),array('function', 'xla', 'default/views/day/ajax_template.html', 641, false),array('function', 'xlt', 'default/views/day/ajax_template.html', 641, false),array('function', 'pc_sort_events', 'default/views/day/ajax_template.html', 896, false),array('modifier', 'date_format', 'default/views/day/ajax_template.html', 891, false),array('modifier', 'string_format', 'default/views/day/ajax_template.html', 892, false),)), $this); ?>
+<?php echo smarty_function_config_load(array('file' => "default.conf"), $this);?>
+
+<?php echo smarty_function_config_load(array('file' => "lang.".($this->_tpl_vars['USER_LANG'])), $this);?>
+
+<?php $_smarty_tpl_vars = $this->_tpl_vars;
+$this->_smarty_include(array('smarty_include_tpl_file' => ($this->_tpl_vars['TPL_NAME'])."/views/header.html", 'smarty_include_vars' => array()));
+$this->_tpl_vars = $_smarty_tpl_vars;
+unset($_smarty_tpl_vars);
+ ?>
+
+<?php 
+/* if you change these be sure to change their matching values in
+ * the CSS for the calendar, found in interface/themes/ajax_calendar.css
+ */
+$timeslotHeightVal=20;
+$timeslotHeightUnit="px";
+ ?>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   MDItek Calendar — Day View  (Light Clinical Theme)
+   All Smarty/PHP logic untouched. CSS only.
+═══════════════════════════════════════════════════════════ */
+:root {
+  --white:       #ffffff;
+  --bg:          #f5f7fa;
+  --sidebar-bg:  #f8f9fc;
+  --border:      #e2e8f0;
+  --border-mid:  #cbd5e1;
+  --navy:        #1e0a3c;
+  --navy-mid:    #2d1260;
+  --navy-light:  #e8eef7;
+  --navy-pale:   #f0f5fb;
+  --gold:        #ffc107;
+  --text:        #1a2636;
+  --text-mid:    #4a6080;
+  --text-muted:  #8099b0;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:   0 4px 12px rgba(0,0,0,.08);
+  --radius:      10px;
+  --radius-sm:   7px;
+}
+* { font-family:'Montserrat',sans-serif; box-sizing:border-box; }
+
+/* ── OUTER WRAPPER ── */
+#wrapper {
+  display:flex !important;
+  flex-direction:column !important;
+  min-height:100vh;
+  background:var(--bg);
+}
+#wrapper.toggled #bottomLeft { margin-left:-244px !important; }
+#mdi-body-row {
+  display:flex !important; flex:1 !important;
+  overflow:hidden !important; min-height:0;
+}
+
+/* ── LEFT SIDEBAR ── */
+#bottomLeft {
+  width:244px !important; min-width:244px !important;
+  background:var(--sidebar-bg) !important;
+  border-right:1px solid var(--border) !important;
+  display:flex !important; flex-direction:column !important;
+  transition:margin .25s ease;
+  height:100%; overflow-y:auto; flex-shrink:0 !important;
+  padding:0 !important; z-index:10;
+}
+#bottomLeft::-webkit-scrollbar { width:3px; }
+#bottomLeft::-webkit-scrollbar-thumb { background:var(--border-mid); border-radius:2px; }
+
+/* ── STATS PANEL ── */
+#mdi-stats-panel { padding:14px 14px 10px; border-bottom:1px solid var(--border); }
+.mdi-stats-label { font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; }
+.mdi-stats-grid  { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.mdi-stat-box    { background:var(--bg); border-radius:8px; padding:10px 10px 8px; border:1px solid var(--border); }
+.mdi-stat-num    { font-family:'Montserrat',sans-serif; font-size:26px; line-height:1; color:var(--navy); }
+.mdi-stat-num.green  { color:#2d7a4f; }
+.mdi-stat-num.violet { color:#5b3d8f; }
+.mdi-stat-num.amber  { color:var(--gold); }
+.mdi-stat-lbl    { font-size:9px; font-weight:600; letter-spacing:.3px; color:var(--text-muted); margin-top:2px; }
+
+/* ── MINI CALENDAR — Meridian style ── */
+#datePicker { padding:14px 14px 10px; border-bottom:1px solid var(--border); }
+#datePicker .table-responsive { margin:0; overflow:visible; }
+#datePicker table.table {
+  width:100% !important; border-collapse:collapse !important;
+  margin:0 !important; table-layout:fixed !important;
+}
+.tdMonthName-small {
+  font-family:'Montserrat',sans-serif !important; font-size:13px !important;
+  font-weight:500 !important; color:var(--navy) !important;
+  text-align:center !important; padding:0 0 6px !important; cursor:pointer !important;
+}
+.tdDOW-small {
+  font-size:9px !important; font-weight:700 !important; text-transform:uppercase !important;
+  letter-spacing:.5px !important; color:var(--text-muted) !important;
+  text-align:center !important; padding:3px 0 4px !important;
+}
+.tdNav {
+  text-align:center !important; font-size:15px !important; font-weight:700 !important;
+  color:var(--text-muted) !important; cursor:pointer !important;
+  padding:0 4px 6px !important; border-radius:4px !important;
+  transition:color .12s !important; user-select:none !important;
+}
+.tdNav:hover { color:var(--navy) !important; }
+.tdDatePickerHighlight,.tdDatePickerHighlightCurrent { color:var(--navy) !important; }
+.tdMonthDay-small,.tdOtherMonthDay-small,.tdWeekend-small,.tdHoliday-small {
+  font-family:'Montserrat',sans-serif !important; font-size:10px !important;
+  color:var(--text-mid) !important; text-align:center !important;
+  padding:3px 1px !important; cursor:pointer !important;
+  transition:background .12s, color .12s !important; position:relative !important;
+}
+.tdMonthDay-small:hover,.tdWeekend-small:hover {
+  background:var(--navy-light) !important; color:var(--navy) !important; border-radius:50% !important;
+}
+.tdOtherMonthDay-small { color:var(--text-muted) !important; opacity:.35 !important; }
+.tdWeekend-small       { color:var(--text-muted) !important; }
+.currentDate {
+  background:var(--navy) !important; color:#fff !important;
+  border-radius:50% !important; font-weight:600 !important;
+}
+.mdi-has-appt { position:relative !important; }
+.mdi-has-appt::after {
+  content:'' !important; position:absolute !important;
+  bottom:1px !important; left:50% !important; transform:translateX(-50%) !important;
+  width:3px !important; height:3px !important; border-radius:50% !important;
+  background:var(--gold) !important; pointer-events:none !important;
+}
+.currentDate.mdi-has-appt::after { background:rgba(255,255,255,.7) !important; }
+
+/* ── PROVIDER PICKER ── */
+#providerPicker {
+  padding:10px 14px 8px; border-bottom:1px solid var(--border);
+  font-size:9px; font-weight:700; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--text-muted);
+}
+#providerPicker > div { margin-top:6px; }
+#pc_facility {
+  width:100% !important; background:var(--white) !important;
+  border:1.5px solid var(--border) !important; border-radius:var(--radius-sm) !important;
+  padding:6px 10px !important; font-size:12px !important; color:var(--text) !important;
+  outline:none !important; margin-bottom:8px !important;
+  box-shadow:none !important;
+  border:1px solid var(--border) !important; transition:border-color .12s !important;
+}
+#pc_facility:focus { border-color:var(--navy) !important; }
+#pc_username { display:none !important; }
+#mdi-provider-pills { display:flex; flex-direction:column; gap:3px; margin-top:4px; }
+.mdi-prov-pill {
+  display:flex; align-items:center; gap:9px; padding:6px 8px;
+  border-radius:var(--radius-sm); cursor:pointer; transition:background .12s;
+  border:1.5px solid transparent;
+}
+.mdi-prov-pill:hover    { background:var(--navy-pale); }
+.mdi-prov-pill.selected { background:var(--navy-light); border-color:var(--navy-light); }
+.mdi-prov-avatar {
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:700; color:#fff; flex-shrink:0;
+}
+.mdi-prov-name  { font-size:11px; font-weight:500; color:var(--text); line-height:1.2; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mdi-prov-check {
+  margin-left:auto; width:14px; height:14px; border-radius:50%;
+  border:1.5px solid var(--border-mid);
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; color:var(--navy); flex-shrink:0;
+}
+.mdi-prov-pill.selected .mdi-prov-check { background:var(--navy); border-color:var(--navy); color:#fff; }
+#facilityColor { margin:8px 14px 0 !important; border:none !important; background:transparent !important; }
+#facilityColor .list-group-item {
+  background:transparent !important; border:none !important;
+  border-left:4px solid !important; padding:4px 8px !important;
+  font-size:11px !important; color:var(--text-mid) !important;
+  margin-bottom:2px !important; border-radius:0 var(--radius-sm) var(--radius-sm) 0 !important;
+}
+
+/* ── TODAY'S APPOINTMENTS SIDEBAR ── */
+/* Set Provider Schedule button */
+.mdi-set-schedule-btn {
+  display:flex; align-items:center; gap:6px;
+  width:100%; margin:8px 0 0;
+  padding:7px 12px;
+  background:transparent;
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-family:'Montserrat',sans-serif;
+  font-size:10px; font-weight:600;
+  color:var(--text-mid); cursor:pointer;
+  transition:background .12s, border-color .12s, color .12s;
+  text-align:left;
+}
+.mdi-set-schedule-btn:hover {
+  background:var(--navy-pale);
+  border-color:var(--navy);
+  color:var(--navy);
+}
+.mdi-set-schedule-btn i { font-size:11px; flex-shrink:0; }
+
+#mdi-today-appts {
+  margin-top:auto; border-top:1px solid var(--border);
+  flex:1; overflow-y:auto; padding:10px 14px; min-height:0;
+}
+#mdi-today-appts::-webkit-scrollbar { width:3px; }
+#mdi-today-appts::-webkit-scrollbar-thumb { background:var(--border-mid); }
+.mdi-today-title { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; }
+.mdi-today-row {
+  display:flex; align-items:center; gap:8px; padding:6px 5px;
+  border-radius:var(--radius-sm); cursor:pointer; transition:background .1s;
+  border-bottom:1px solid var(--border);
+}
+.mdi-today-row:last-child { border-bottom:none; }
+.mdi-today-row:hover { background:var(--navy-pale); }
+.mdi-today-time { font-family:'Montserrat',sans-serif; font-size:10px; color:var(--text-muted); white-space:nowrap; min-width:36px; }
+.mdi-today-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.mdi-today-name { font-size:11px; font-weight:500; color:var(--text); line-height:1.2; }
+.mdi-today-type { font-size:9px; color:var(--text-muted); }
+
+/* ── TOP TOOLBAR ── */
+.page-content-wrapper { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+#topToolbarRight {
+  background:var(--white) !important; border-bottom:1px solid var(--border) !important;
+  padding:10px 20px !important; display:flex !important; align-items:center !important;
+  gap:10px !important; flex-wrap:wrap; box-shadow:none !important; border:1px solid var(--border) !important;
+}
+.container-fluid.sticky-top { padding:0 !important; position:static !important; }
+#functions { display:flex !important; align-items:center !important; gap:6px !important; order:1; }
+#functions .btn, #functions a.btn {
+  height:34px !important; min-width:34px !important; padding:0 12px !important;
+  border-radius:var(--radius-sm) !important; font-size:12px !important; font-weight:600 !important;
+  display:inline-flex !important; align-items:center !important; justify-content:center !important;
+  gap:6px !important; transition:all .15s !important; border:none !important; cursor:pointer !important;
+}
+#functions a.btn:first-child { background:var(--navy) !important; color:#fff !important; }
+#functions a.btn:first-child:hover { background:var(--navy-mid) !important; }
+#functions a.btn:not(:first-child):not([name=bnsubmit]) {
+  background:var(--bg) !important; border:1.5px solid var(--border) !important; color:var(--text-mid) !important;
+}
+#functions a.btn:not(:first-child):not([name=bnsubmit]):hover { border-color:var(--navy) !important; color:var(--navy) !important; }
+#functions a[name=bnsubmit] {
+  background:var(--navy-light) !important; color:var(--navy) !important;
+  font-size:11px !important; font-weight:700 !important; border:1.5px solid var(--navy-light) !important;
+}
+#functions a[name=bnsubmit]:hover { background:var(--navy) !important; color:#fff !important; }
+#functions a#menu-toggle {
+  background:var(--bg) !important; border:1.5px solid var(--border) !important; color:var(--text-mid) !important;
+}
+#functions a#menu-toggle:hover { border-color:var(--navy) !important; color:var(--navy) !important; }
+
+/* Day nav — shows formatted full date */
+#dateNAV {
+  font-family:'Montserrat',sans-serif !important; font-size:18px !important;
+  color:var(--text) !important; display:flex !important; align-items:center !important;
+  gap:8px !important; order:2;
+}
+#dateNAV a { color:var(--navy) !important; text-decoration:none !important; transition:color .12s !important; }
+#dateNAV a:hover { color:var(--gold) !important; }
+
+#viewPicker {
+  display:flex !important; align-items:center !important; gap:4px !important;
+  margin-left:auto !important; order:3;
+  background:var(--bg) !important; border-radius:var(--radius-sm) !important;
+  padding:3px !important; border:1px solid var(--border) !important;
+}
+#viewPicker a.btn {
+  background:none !important; border:none !important; color:var(--text-muted) !important;
+  font-size:11px !important; font-weight:600 !important; padding:5px 12px !important;
+  border-radius:5px !important; height:28px !important;
+  display:inline-flex !important; align-items:center !important; gap:5px !important; transition:all .12s !important;
+}
+#viewPicker a.btn:hover { background:var(--white) !important; color:var(--navy) !important; }
+
+/* ── STATUS LEGEND ── */
+#mdi-status-legend {
+  display:flex; align-items:center; justify-content:flex-end; gap:14px;
+  padding:7px 16px; background:var(--white);
+  border-bottom:1px solid var(--border); flex-wrap:wrap;
+}
+.mdi-leg-item { display:flex; align-items:center; gap:5px; font-size:10px; font-weight:500; color:var(--text-muted); }
+.mdi-leg-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ── DAY CALENDAR BODY ── */
+.calsearch_body { flex:1; overflow-y:auto; padding:0 !important; min-width:0; }
+#bigCal { padding:0 !important; display:flex; flex-direction:column; }
+
+#bigCal .table-responsive {
+  border-radius:0 !important; overflow:visible !important;
+  box-shadow:none !important; background:var(--white) !important;
+}
+#bigCal table.table {
+  margin:0 !important; border-collapse:collapse !important;
+  background:var(--white) !important; width:100% !important;
+}
+
+/* Time column */
+#times { width:54px !important; min-width:54px !important; max-width:54px !important; padding:0 !important; vertical-align:top !important; }
+#times table { margin:0 !important; border-right:1px solid var(--border) !important; }
+#times .timeslot {
+  padding:0 !important; height:20px !important; line-height:20px !important;
+  border-top:1px solid var(--border) !important; white-space:nowrap !important;
+}
+#times .timeslot a {
+  font-family:'Montserrat',sans-serif !important; font-size:9px !important;
+  color:var(--text-muted) !important; text-decoration:none !important;
+  display:block !important; padding:0 6px !important; transition:color .1s !important;
+}
+#times .timeslot a:hover { color:var(--navy) !important; }
+
+/* Provider "all users" icon row at top of times column */
+#times .timeslot.providerXbtn {
+  background:var(--navy) !important; border:none !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  height:36px !important;
+}
+#times .timeslot.providerXbtn i { color:#fff !important; font-size:14px !important; cursor:pointer !important; }
+
+/* Provider day columns */
+td.schedule {
+  vertical-align:top !important; padding:0 !important;
+  border-left:1px solid var(--border) !important;
+  position:relative !important; min-width:120px !important;
+}
+td.work-day    { background:#f0f1f3 !important; }
+td.weekend-day { background:var(--white) !important; }
+
+/* Provider header INSIDE each day column */
+.providerheader.providerday {
+  background:var(--navy) !important; color:#fff !important;
+  font-size:11px !important; font-weight:600 !important;
+  padding:8px 10px 8px 12px !important;
+  letter-spacing:.2px !important; height:36px !important;
+  position:sticky !important; top:0 !important; z-index:3 !important;
+}
+/* X close button */
+.providerXbtn.userClose {
+  width:18px !important; height:18px !important;
+  border-radius:50% !important;
+  background:rgba(255,255,255,.2) !important;
+  border:1px solid rgba(255,255,255,.35) !important;
+  display:inline-flex !important; align-items:center !important; justify-content:center !important;
+  cursor:pointer !important; flex-shrink:0 !important;
+  transition:background .12s !important;
+}
+.providerXbtn.userClose::after {
+  content:'×' !important; font-size:12px !important; color:#fff !important; line-height:1 !important;
+}
+.providerXbtn.userClose:hover { background:rgba(255,255,255,.35) !important; }
+
+.calendar_day { position:relative !important; height:100% !important; }
+
+/* ── DAY VIEW EVENT BLOCKS — absolutely positioned ── */
+.event {
+  position:absolute !important;
+  border-radius:6px !important;
+  padding:4px 7px !important;
+  font-size:10px !important; font-weight:500 !important; line-height:1.35 !important;
+  border-left-width:3px !important; border-left-style:solid !important;
+  overflow:hidden !important; cursor:pointer !important;
+  transition:box-shadow .12s, filter .12s !important;
+  z-index:2; min-height:18px !important;
+}
+.event_appointment:hover {
+  box-shadow:0 4px 14px rgba(0,0,0,.18) !important;
+  filter:brightness(1.04) !important; z-index:10 !important;
+  transform:translateX(1px) !important;
+}
+.event_in:hover,.event_out:hover,.event_reserved:hover {
+  box-shadow:0 2px 8px rgba(0,0,0,.12) !important;
+  filter:brightness(1.02) !important; z-index:10 !important;
+}
+.event_highlight { box-shadow:0 4px 14px rgba(0,0,0,.22) !important; z-index:10 !important; }
+
+/* IN event label above main block */
+/* IN event — edit button label at top */
+.in_start {
+  font-family:'Montserrat',sans-serif !important;
+  font-size:10px !important; font-weight:700 !important;
+  color:#fff !important;
+  background:#5DB721 !important;
+  border:none !important;
+  border-radius:0 !important;
+  padding:3px 8px !important;
+  z-index:4 !important;
+  overflow:visible !important;
+  cursor:pointer !important;
+  display:flex !important; align-items:center !important; gap:5px !important;
+  letter-spacing:.2px !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.15) !important;
+  transition:background .12s !important;
+}
+.in_start:hover {
+  background:#4aa81a !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.22) !important;
+}
+.in_start::before {
+  content:'\270E' !important; /* pencil icon */
+  font-size:11px !important;
+  line-height:1 !important;
+}
+
+/* Status colors */
+.event-new           { background:#dff3f3 !important; border-left-color:#2ACBCA !important; color:#0d5c5c !important; }
+.event-arrived       { background:#e8f8e0 !important; border-left-color:#5DB721 !important; color:#2a5a0e !important; }
+.event-undertwentyfour { background:#f8e4f8 !important; border-left-color:#FF4DFA !important; color:#6b1a6b !important; }
+.event-cancelled     { background:#fde8f3 !important; border-left-color:#FF0092 !important; color:#7a0045 !important; }
+.event-noshow        { background:#fde8e8 !important; border-left-color:#FF4C4C !important; color:#7a1a1a !important; }
+.event-checkedout    { background:#edecea !important; border-left-color:#8a8880 !important; color:#4a4844 !important; }
+.event-default       { background:var(--navy-light) !important; border-left-color:var(--navy) !important; color:var(--navy) !important; }
+.event_reserved      { background:#fff8e8 !important; border-left-color:var(--gold) !important; color:#7a4a10 !important; }
+.event_in            { background:rgba(93,183,33,.13) !important; border-left-color:#5DB721 !important; border-left-width:3px !important; color:#2a5a0e !important; cursor:pointer !important; }
+.event_in:hover      { background:rgba(93,183,33,.22) !important; box-shadow:0 2px 8px rgba(93,183,33,.25) !important; }
+.event_out           { background:rgba(255,76,76,.07) !important; border-left-color:#FF4C4C !important; color:#7a1a1a !important; border-left-width:2px !important; }
+.event_noshow        { text-decoration:line-through; opacity:.75; }
+.event_holiday       { background:#fff8e8 !important; border-left-color:var(--gold) !important; color:#7a4a10 !important; }
+.event_appointment.event-new.event-default{ background:#dff3f3 !important; border-left-color:#2ACBCA !important; color:#0d5c5c !important; }
+.event-default.event-arrived       { background:#e8f8e0 !important; border-left-color:#5DB721 !important; color:#2a5a0e !important; }
+.event-default.event-undertwentyfour { background:#f8e4f8 !important; border-left-color:#FF4DFA !important; color:#6b1a6b !important; }
+.event-default.event-cancelled     { background:#fde8f3 !important; border-left-color:#FF0092 !important; color:#7a0045 !important; }
+.event-default.event-noshow        { background:#fde8e8 !important; border-left-color:#FF4C4C !important; color:#7a1a1a !important; }
+.event-default.event-checkedout    { background:#edecea !important; border-left-color:#8a8880 !important; color:#4a4844 !important; }
+
+
+a.event_time  { color:inherit !important; font-family:'Montserrat',sans-serif !important; font-size:9px !important; font-weight:500 !important; }
+a.link_title  { color:inherit !important; font-weight:600 !important; }
+.appointment  { font-size:10px !important; }
+
+/* Timeslot grid lines */
+td.schedule .calendar_day::before {
+  content:none;
+}
+
+/* popup image */
+#popup { position:fixed; z-index:1000; pointer-events:none; }
+#bigCalHeader { display:none; }
+
+/* scrollbars */
+.calsearch_body::-webkit-scrollbar { width:5px; }
+.calsearch_body::-webkit-scrollbar-track { background:var(--bg); }
+.calsearch_body::-webkit-scrollbar-thumb { background:var(--border-mid); border-radius:3px; }
+
+.mdi-set-schedule-btn {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+
+  width:100%;
+  margin-bottom:12px;
+  padding:10px 14px;
+
+  background:var(--navy);
+  border:none;
+  border-radius:8px;
+
+  font-family:'Montserrat',sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.4px;
+
+  color:#fff;
+  cursor:pointer;
+
+  box-shadow:0 2px 8px rgba(30,10,60,.18);
+  transition:all .15s ease;
+}
+
+/* REAL hover (this is what you want) */
+.mdi-set-schedule-btn:hover {
+  background:#2d1260;
+  box-shadow:0 4px 14px rgba(30,10,60,.28);
+  transform:translateY(-1px);
+  color: #FFF !important;
+}
+</style>
+<script>
+
+ // This is called from the event editor popup.
+ function refreshme() {
+  top.restoreSession();
+  document.forms[0].submit();
+ }
+
+ function newEvt(startampm, starttimeh, starttimem, eventdate, providerid, catid) {
+  top.restoreSession();
+  dlgopen('add_edit_event.php?startampm=' + encodeURIComponent(startampm) +
+   '&starttimeh=' + encodeURIComponent(starttimeh) + '&userid=' + encodeURIComponent(providerid) + '&starttimem=' + encodeURIComponent(starttimem) +
+   '&date=' + encodeURIComponent(eventdate) + '&catid=' + encodeURIComponent(catid)
+   ,'_blank', 780, 675, '', '');
+ }
+
+ function oldEvt(eventdate, eventid, pccattype) {
+  top.restoreSession();
+  dlgopen('add_edit_event.php?date=' + encodeURIComponent(eventdate) + '&eid=' + encodeURIComponent(eventid) + '&prov=' + encodeURIComponent(pccattype), '_blank', 780, 675, '', '');
+ }
+
+ function oldGroupEvt(eventdate, eventid, pccattype){
+  top.restoreSession();
+  dlgopen('add_edit_event.php?group=true&date=' + encodeURIComponent(eventdate) + '&eid=' + encodeURIComponent(eventid) + '&prov=' + encodeURIComponent(pccattype), '_blank', 780, 675, '', '');
+ }
+
+ function goPid(pid) {
+  top.restoreSession();
+<?php 
+  		echo "  top.RTop.location = '../../patient_file/summary/demographics.php' " .
+   		"+ '?set_pid=' + encodeURIComponent(pid);\n";
+ ?>
+ }
+
+ function goGid(gid) {
+  top.restoreSession();
+<?php 
+        echo "  top.RTop.location = '" . $GLOBALS['rootdir'] . "/therapy_groups/index.php' " .
+        "+ '?method=groupDetails&group_id=' + encodeURIComponent(gid) \n ";
+ ?>
+ }
+
+ function GoToToday(theForm){
+  var todays_date = new Date();
+  var theMonth = todays_date.getMonth() + 1;
+  theMonth = theMonth < 10 ? "0" + theMonth : theMonth;
+  theForm.jumpdate.value = todays_date.getFullYear() + "-" + theMonth + "-" + todays_date.getDate();
+  top.restoreSession();
+  theForm.submit();
+ }
+
+ function ShowImage(src)
+ {
+     var img = document.getElementById('popupImage');
+     var div = document.getElementById('popup');
+     img.src = src;
+     div.style.display = "block";
+ }
+
+ function newEvtProvider(startampm, starttimeh, starttimem, eventdate, providerid, catid) {
+  top.restoreSession();
+
+  dlgopen(
+    'add_edit_event.php?prov=true' +
+    '&startampm=' + encodeURIComponent(startampm) +
+    '&starttimeh=' + encodeURIComponent(starttimeh) +
+    '&starttimem=' + encodeURIComponent(starttimem) +
+    '&date=' + encodeURIComponent(eventdate) +
+    '&userid=' + encodeURIComponent(providerid) +
+    '&catid=' + encodeURIComponent(catid),
+    '_blank',
+    780,
+    675,
+    '',
+    ''
+  );
+}
+
+ function HideImage()
+ {
+     document.getElementById('popup').style.display = "none";
+ }
+</script>
+
+<?php 
+ // this is my proposed setting in the globals config file so we don't
+ // need to mess with altering the pn database AND the config file
+ //pnModSetVar(__POSTCALENDAR__, 'pcFirstDayOfWeek', $GLOBALS['schedule_dow_start']);
+
+  $openhour= $GLOBALS['schedule_start'];
+  $closehour= $GLOBALS['schedule_end'];
+
+
+ // build a day-of-week (DOW) list so we may properly build the calendars later in this code
+ $DOWlist = array();
+ $tmpDOW = pnModGetVar(__POSTCALENDAR__, 'pcFirstDayOfWeek');
+ // bound check and auto-correction
+ if ($tmpDOW <0 || $tmpDOW >6) {
+    pnModSetVar(__POSTCALENDAR__, 'pcFirstDayOfWeek', '0');
+    $tmpDOW = 0;
+ }
+ while (count($DOWlist) < 7) {
+    array_push($DOWlist, $tmpDOW);
+    $tmpDOW++;
+    if ($tmpDOW > 6) $tmpDOW = 0;
+ }
+
+ // A_CATEGORY is an ordered array of associative-array categories.
+ // Keys of interest are: id, name, color, desc, event_duration.
+ //
+ // echo "<!-- A_CATEGORY = "; print_r($this->_tpl_vars['A_CATEGORY']); echo " -->\n"; // debugging
+ // echo "<!-- A_EVENTS = "; print_r($this->_tpl_vars['A_EVENTS']); echo " -->\n"; // debugging
+
+ $A_CATEGORY  =& $this->_tpl_vars['A_CATEGORY'];
+
+ $A_EVENTS  =& $this->_tpl_vars['A_EVENTS'];
+ $providers =& $this->_tpl_vars['providers'];
+ $times     =& $this->_tpl_vars['times'];
+ $interval  =  $this->_tpl_vars['interval'];
+ $viewtype  =  $this->_tpl_vars['VIEW_TYPE'];
+ $PREV_WEEK_URL = $this->_tpl_vars['PREV_WEEK_URL'];
+ $NEXT_WEEK_URL = $this->_tpl_vars['NEXT_WEEK_URL'];
+ $PREV_DAY_URL  = $this->_tpl_vars['PREV_DAY_URL'];
+ $NEXT_DAY_URL  = $this->_tpl_vars['NEXT_DAY_URL'];
+ $PREV_MONTH_URL = $this->_tpl_vars['PREV_MONTH_URL'];
+ $NEXT_MONTH_URL = $this->_tpl_vars['NEXT_MONTH_URL'];
+
+ $Date =  postcalendar_getDate();
+ if (!isset($y)) $y = substr($Date, 0, 4);
+ if (!isset($m)) $m = substr($Date, 4, 2);
+ if (!isset($d)) $d = substr($Date, 6, 2);
+
+ // echo "<!-- There are " . count($A_EVENTS) . " A_EVENTS days -->\n";
+
+ $MULTIDAY = count($A_EVENTS) > 1;
+
+//==================================
+//FACILITY FILTERING (CHEMED)
+$facilities = getUserFacilities($_SESSION['authUserID']); // from users_facility
+if ( $_SESSION['pc_facility'] ) {
+  $provinfo = getProviderInfo('%', true, $_SESSION['pc_facility']);
+} else {
+  $provinfo = getProviderInfo();
+}
+//EOS FACILITY FILTERING (CHEMED)
+//==================================
+
+$chevron_icon_left = $_SESSION['language_direction'] == 'ltr' ? 'fa-chevron-circle-left' : 'fa-chevron-circle-right';
+$chevron_icon_right = $_SESSION['language_direction'] == 'ltr' ? 'fa-chevron-circle-right' : 'fa-chevron-circle-left';
+ ?>
+<div id="wrapper">
+    <form name='theform' id='theform' action='index.php?module=PostCalendar&func=view&tplview=default&pc_category=&pc_topic=' method='post' onsubmit='return top.restoreSession()'>
+      <div class="container-fluid sticky-top">
+        <div id="topToolbarRight" class="bgcolor2">
+            <div id="functions">
+                <a id="menu-toggle" href="#" class="btn btn-outline-dark"><i class="fas fa-bars"></i></a>
+                <input type="hidden" name="jumpdate" id="jumpdate" value="" />
+                <input type="hidden" name="viewtype" id="viewtype" value="<?php echo attr($viewtype); ?>" />
+                <?php  echo "<a href='#' title='" . xla("New Appointment") . "' onclick='newEvt(1, 9, 00, " . attr_js($Date) . ", 0, 0)' class='btn btn-primary'><i class='fa fa-plus'></i></a>\n";
+                echo "<a href='#' title='" . xla("Search Appointment") . "' onclick='top.restoreSession();location=\"index.php?module=PostCalendar&func=search\"' class='btn btn-primary'><i class='fa fa-search'></i></a>\n";
+                 ?>
+                <a href='#' name='bnsubmit' value='<?php echo smarty_function_xla(array('t' => 'Today'), $this);?>
+' onClick='GoToToday(theform);' class='btn btn-primary'><?php echo smarty_function_xlt(array('t' => 'Today'), $this);?>
+</a>
+
+</div>
+<div id="dateNAV">
+<?php 
+echo "   <a id='prevday' href='$PREV_DAY_URL' onclick='top.restoreSession()' title='" . xla("Previous Day") . "'>
+            <i class='fa " . attr($chevron_icon_left) . " chevron_color'></i></a>\n";
+$atmp = array_keys($A_EVENTS);
+echo text(dateformat(strtotime($atmp[0]),true));
+echo "   <a id='nextday' href='$NEXT_DAY_URL' onclick='top.restoreSession()' title='" . xla("Next Day") . "'>
+            <i class= 'fa " . attr($chevron_icon_right) . " chevron_color'></i></a>\n";
+ ?>
+</div>
+<div id="viewPicker">
+<?php 
+echo "   <a href='#' id='printview' title='" . xla("View Printable Version") . "' class='btn btn-primary'>
+            <i class='fa fa-print' aria-hidden='true'></i></a>\n";
+echo "   <a href='#' title='" . xla("Refresh") . "' onclick='javascript:refreshme()' class='btn btn-primary'>
+            <i class='fa fa-sync' aria-hidden='true'></i></a>\n";
+echo "   <a href='#' type='button' id='dayview' title='" . xla('Day View') . "' class='btn btn-primary'>" . xlt('Day') . "</a>\n";
+echo "   <a href='#' type='button' id='weekview' title='" . xla('Week View') . "' class='btn btn-primary'>" . xlt('Week') . "</a>\n";
+echo "   <a href='#' type='button' id='monthview' title='" . xla('Month View') . "' class='btn btn-primary'>" . xlt('Month') . "</a>\n";
+ ?>
+</div>
+</div> <!-- end topToolbarRight -->
+</div>
+
+<!-- MDItek status legend -->
+<div id="mdi-status-legend">
+  <span style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8099b0;margin-right:4px;">Status:</span>
+  <div class="mdi-leg-item"><div class="mdi-leg-dot" style="background:#2ACBCA"></div> Scheduled</div>
+  <div class="mdi-leg-item"><div class="mdi-leg-dot" style="background:#5DB721"></div> Arrived</div>
+  <div class="mdi-leg-item"><div class="mdi-leg-dot" style="background:#FF4DFA"></div> &lt;24h Cancel</div>
+  <div class="mdi-leg-item"><div class="mdi-leg-dot" style="background:#FF0092"></div> Cancelled</div>
+  <div class="mdi-leg-item"><div class="mdi-leg-dot" style="background:#FF4C4C"></div> No Show</div>
+  <div class="mdi-leg-item"><div class="mdi-leg-dot" style="background:#8a8880"></div> Checked Out</div>
+</div>
+
+<div id="bottomLeft" class="sidebar-wrapper">
+<div id="datePicker">
+<?php 
+$atmp = array_keys($A_EVENTS);
+$caldate = strtotime($atmp[0]);
+$cMonth = date("m", $caldate);
+$cYear = date("Y", $caldate);
+$cDay = date("d", $caldate);
+
+include_once($GLOBALS['fileroot'].'/interface/main/calendar/modules/PostCalendar/pntemplates/default/views/monthSelector.php');
+echo "\n";
+ ?>
+<div class="table-responsive">
+<table class='table table-sm table-borderless'>
+<tbody><tr>
+<?php 
+
+// compute the previous month date
+// stay on the same day if possible
+$pDay = $cDay;
+$pMonth = $cMonth - 1;
+$pYear = $cYear;
+if ($pMonth < 1) { $pMonth = 12; $pYear = $cYear - 1; }
+while (! checkdate($pMonth, $pDay, $pYear)) { $pDay = $pDay - 1; }
+$prevMonth = sprintf("%d%02d%02d",$pYear,$pMonth,$pDay);
+
+// compute the next month
+// stay on the same day if possible
+$nDay = $cDay;
+$nMonth = $cMonth + 1;
+$nYear = $cYear;
+if ($nMonth > 12) { $nMonth = 1; $nYear = $cYear + 1; }
+while (! checkdate($nMonth, $nDay, $nYear)) { $nDay = $nDay - 1; }
+$nextMonth = sprintf("%d%02d%02d",$nYear,$nMonth,$nDay);
+ ?>
+<td class="tdDOW-small tdDatePicker" id="<?php echo attr($prevMonth) ?>" title="<?php echo xla(date("F", strtotime($prevMonth))); ?>">&lt;</td>
+<td colspan="5" class="tdMonthName-small">
+<?php 
+echo xl(date('F', $caldate));
+ ?>
+</td>
+<td class="tdDOW-small tdDatePicker" id="<?php echo attr($nextMonth) ?>" title="<?php echo xla(date("F", strtotime($nextMonth))); ?>">&gt;</td>
+</tr><tr>
+<?php 
+foreach ($DOWlist as $dow) {
+    echo "<td class='tdDOW-small'>" . text($this->_tpl_vars['A_SHORT_DAY_NAMES'][$dow]) . "</td>";
+}
+ ?>
+</tr>
+<?php 
+$atmp = array_keys($A_EVENTS);
+$caldate = strtotime($atmp[0]);
+$caldateEnd = strtotime($atmp[6] ?? '');
+
+// to make a complete week row we need to compute the real
+// start and end dates for the view
+list ($year, $month, $day) = explode(" ", date('Y m d', $caldate));
+$startdate = strtotime($year.$month."01");
+$enddate = strtotime($year.$month.date("t", $startdate)." 23:59");
+while (date('w', $startdate) != $DOWlist[0]) { $startdate -= 60*60*24; }
+while (date('w', $enddate) != $DOWlist[6]) { $enddate += 60*60*24; }
+
+$currdate = $startdate;
+while ($currdate <= $enddate) {
+    if (date('w', $currdate) == $DOWlist[0]) {
+        // start of week row
+        $tr = "<tr>";
+        echo $tr;
+    }
+
+    // set the TD class
+    $tdClass = "tdMonthDay-small";
+    if (date('m', $currdate) != $month) {
+        $tdClass = "tdOtherMonthDay-small";
+    }
+    if (is_weekend_day(date('w', $currdate))) {
+        $tdClass = "tdWeekend-small";
+    }
+    if (is_holiday(date('Y-m-d', $currdate))) {
+        $tdClass = "tdHoliday-small";
+    }
+
+    if (date('Ymd',$currdate) == $Date) {
+        // $Date is defined near the top of this file
+        // and is equal to whatever date the user has clicked
+        $tdClass .= " currentDate";
+    }
+
+    // add a class so that jQuery can grab these days for the 'click' event
+    $tdClass .= " tdDatePicker";
+
+    // output the TD
+    $td = "<td ";
+    $td .= "class=\"" . attr($tdClass) . "\" ";
+    //$td .= "id=\"" . attr(date("Ymd", $currdate)) . "\" ";
+    $td .= "id=\"" . attr(date("Ymd", $currdate)) . "\" ";
+    $td .= "title=\"" . xla('Go to') . " " . attr(date('M d, Y', $currdate)) . "\" ";
+    $td .= "> " . text(date('d', $currdate)) . "</td>\n";
+    echo $td;
+
+    // end of week row
+    if (date('w', $currdate) == $DOWlist[6]) echo "</tr>\n";
+
+    // time correction = plus 1000 seconds, for some unknown reason
+    //$currdate += (60*60*24)+1000;
+
+    ////////
+    $currdate = strtotime("+1 day", $currdate);
+    ////////
+}
+ ?>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="bigCalHeader">
+</div>
+
+<!-- MDItek stats panel -->
+<div id="mdi-stats-panel" style="display:none;">
+  <div class="mdi-stats-label">Today's Overview</div>
+  <?php 
+  $mdi_tot=0; $mdi_arr=0; $mdi_co=0; $mdi_pend=0;
+  foreach ($A_EVENTS as $mdi_date => $mdi_evs) {
+    foreach ($mdi_evs as $mdiEv) {
+      if (!empty($mdiEv['pid']) && !in_array(($mdiEv['catid'] ?? 0), [2,3,6])) {
+        $mdi_tot++;
+        $s = $mdiEv['apptstatus'] ?? '-';
+        if ($s==='@') $mdi_arr++;
+        elseif ($s==='>') $mdi_co++;
+        elseif ($s==='-') $mdi_pend++;
+      }
+    }
+  }
+   ?>
+  <div class="mdi-stats-grid">
+    <div class="mdi-stat-box">
+      <div class="mdi-stat-num"><?php echo (int)$mdi_tot; ?></div>
+      <div class="mdi-stat-lbl">Total</div>
+    </div>
+    <div class="mdi-stat-box">
+      <div class="mdi-stat-num green"><?php echo (int)$mdi_arr; ?></div>
+      <div class="mdi-stat-lbl">Arrived</div>
+    </div>
+    <div class="mdi-stat-box">
+      <div class="mdi-stat-num violet"><?php echo (int)$mdi_co; ?></div>
+      <div class="mdi-stat-lbl">Checked Out</div>
+    </div>
+    <div class="mdi-stat-box">
+      <div class="mdi-stat-num amber"><?php echo (int)$mdi_pend; ?></div>
+      <div class="mdi-stat-lbl">Pending</div>
+    </div>
+  </div>
+</div>
+
+<div id="providerPicker">
+<?php echo smarty_function_xlt(array('t' => 'Providers'), $this);?>
+
+<div>
+<?php 
+// ==============================
+// FACILITY FILTERING (lemonsoftware)
+/*********************************************************************
+$facilities = getFacilities();
+*********************************************************************/
+if (!empty($_SESSION['authorizeduser']) && ($_SESSION['authorizeduser'] == 1)) {
+  $facilities = getFacilities();
+} else {
+  $facilities = getUserFacilities($_SESSION['authUserID']); // from users_facility
+  if (count($facilities) == 1)
+    OpenEMR\Common\Session\SessionUtil::setSession('pc_facility', key($facilities));
+}
+/********************************************************************/
+if (count($facilities) > 1) {
+    echo "   <select name='pc_facility' id='pc_facility' class='view1 form-control' >\n";
+    if ( !$_SESSION['pc_facility'] ) $selected = "selected='selected'";
+    // echo "    <option value='0' $selected>"  . xlt('All Facilities') . "</option>\n";
+    if (!$GLOBALS['restrict_user_facility']) echo "    <option class='bg-info' value='0' $selected>" . xlt('All Facilities') . "</option>\n";
+    foreach ($facilities as $fa) {
+        $selected = ( $_SESSION['pc_facility'] == $fa['id']) ? "selected='selected'" : "" ;
+        echo "    <option class='bg-info' value='" . attr($fa['id']) . "' $selected>" . text($fa['name']) . "</option>\n";
+    }
+    echo "   </select>\n";
+}
+ // EOS FF
+ // ==============================
+ echo "</div>";
+ echo "   <select multiple size='5' name='pc_username[]' id='pc_username' class='view2 form-control'>\n";
+ echo "    <option value='__PC_ALL__'>"  . xlt("All Users") . "</option>\n";
+ foreach ($provinfo as $doc) {
+    $username = $doc['username'];
+    echo "    <option value='" . attr($username) . "'";
+    foreach ($providers as $provider)
+        if ($provider['username'] == $username) echo " selected";
+    echo ">" . text($doc['lname']) . ", " . text($doc['fname']) . "</option>\n";
+ }
+ echo "   </select>\n";
+ ?>
+</div>
+<?php 
+if($_SESSION['pc_facility'] == 0){
+ ?>
+<ul class="list-group list-group-flush" id="facilityColor">
+<?php 
+foreach ($facilities as $f){
+    echo "<li class='list-group-item' style='border-left: 35px solid ".$f['color'].";'>" . text($f['name'])."</li>";
+}
+ ?>
+</ul>
+<?php 
+}
+ ?>
+<?php $this->assign('dayname', ((is_array($_tmp=$this->_tpl_vars['DATE'])) ? $this->_run_mod_handler('date_format', true, $_tmp, "%w") : smarty_modifier_date_format($_tmp, "%w"))); ?>
+<?php $this->assign('day', ((is_array($_tmp=((is_array($_tmp=$this->_tpl_vars['DATE'])) ? $this->_run_mod_handler('date_format', true, $_tmp, "%d") : smarty_modifier_date_format($_tmp, "%d")))) ? $this->_run_mod_handler('string_format', true, $_tmp, "%1d") : smarty_modifier_string_format($_tmp, "%1d"))); ?>
+<?php $this->assign('month', ((is_array($_tmp=((is_array($_tmp=$this->_tpl_vars['DATE'])) ? $this->_run_mod_handler('date_format', true, $_tmp, "%m") : smarty_modifier_date_format($_tmp, "%m")))) ? $this->_run_mod_handler('string_format', true, $_tmp, "%1d") : smarty_modifier_string_format($_tmp, "%1d"))); ?>
+<?php $this->assign('year', ((is_array($_tmp=((is_array($_tmp=$this->_tpl_vars['DATE'])) ? $this->_run_mod_handler('date_format', true, $_tmp, "%Y") : smarty_modifier_date_format($_tmp, "%Y")))) ? $this->_run_mod_handler('string_format', true, $_tmp, "%4d") : smarty_modifier_string_format($_tmp, "%4d"))); ?>
+
+<?php echo smarty_function_pc_sort_events(array('var' => 'S_EVENTS','sort' => 'time','order' => 'asc','value' => $this->_tpl_vars['A_EVENTS']), $this);?>
+
+
+<?php 
+echo "<button class='mdi-set-schedule-btn' onclick='mdiOpenProviderSchedule()' type='button'>";
+echo "<i class='fa fa-calendar-check-o'></i> " . xlt('+ New Provider Schedule');
+echo "</button>\n";
+ ?>
+
+<!-- MDItek today's appointments list -->
+<div id="mdi-today-appts">
+  <div class="mdi-today-title">Today's Appointments</div>
+  <?php 
+  $mdi_statColors = ['-'=>'#2ACBCA','@'=>'#5DB721','%'=>'#FF4DFA','x'=>'#FF0092','>'=>'#8a8880','?'=>'#FF4C4C'];
+  $mdi_todayAppts = [];
+  foreach ($A_EVENTS as $mdi_date => $mdi_evs) {
+    foreach ($mdi_evs as $ev) {
+      if (!empty($ev['pid']) && !in_array(($ev['catid']??0), [2,3,6])) $mdi_todayAppts[] = $ev;
+    }
+  }
+  usort($mdi_todayAppts, function($a,$b){ return strcmp($a['startTime'],$b['startTime']); });
+  if (count($mdi_todayAppts) === 0) {
+    echo "<div style='font-size:11px;color:#8099b0;padding:8px 0;'>No appointments today.</div>";
+  }
+  foreach ($mdi_todayAppts as $tev) {
+    $tStat  = $tev['apptstatus'] ?? '-';
+    $tColor = $mdi_statColors[$tStat] ?? '#2ACBCA';
+    $tComma = strpos($tev['patient_name'] ?? '', ',');
+    $tLname = $tComma !== false ? substr($tev['patient_name'],0,$tComma) : ($tev['patient_name'] ?? '');
+    $tFname = $tComma !== false ? trim(substr($tev['patient_name'],$tComma+1)) : '';
+    $tDT    = strtotime(date('Y-m-d').' '.$tev['startTime']);
+    $tM     = substr($tev['startTime'],3,2);
+    $tDisp  = date('g',$tDT).($tM=='00'?date('a',$tDT):date(':ia',$tDT));
+    $tCat   = $tev['catname'] ?? '';
+    $tPid   = $tev['pid'] ?? '';
+    echo "<div class='mdi-today-row'" . ($tPid ? " onclick='goPid(".attr_js($tPid).")'" : "") . ">";
+    echo "<div class='mdi-today-time'>".text($tDisp)."</div>";
+    echo "<div class='mdi-today-dot' style='background:".attr($tColor)."'></div>";
+    echo "<div><div class='mdi-today-name'>".text($tLname).($tFname?", ".text($tFname):'')."</div>";
+    echo "<div class='mdi-today-type'>".text($tCat)."</div></div>";
+    echo "</div>";
+  }
+   ?>
+</div>
+
+<div id="popup" class="pop-up">
+    <img id="popupImage" alt="" />
+</div>
+</div><!-- end bottomLeft -->
+</div>
+<div class="page-content-wrapper">
+<div class="container-fluid calsearch_body">
+<div id="bigCal">
+<?php 
+/* used in debugging
+    foreach ($A_EVENTS as $date => $events) {
+        echo $date." = ";
+        foreach ($events as $oneE) {
+            echo text(print_r($oneE, true));
+            echo "<br /><br />";
+        }
+        echo "<hr class='w-100'>";
+    }
+*/
+
+echo "<div class='table-responsive'>";
+echo "<table class='table border-0'>\n";
+
+// output the TD with the times DIV
+echo "<tr>";
+echo "<td id='times'><div class='table-responsive'><table class='table'><tr>\n";
+echo "<td class='timeslot providerXbtn' data-username='__PC_ALL__'><i class='fa fa-lg fa-user-md'></i></td></tr>";
+//============================================================================================================================
+// Check global time preference so that 24 and 12hour preference is displayed properly
+
+if ($GLOBALS['time_display_format'] == 1) {
+    $timeformat = 12;
+} else {
+    $timeformat = 0;
+}
+
+foreach ($times as $slottime) {
+    $startampm = ($slottime['mer']) == "pm" ? 2 : 1;
+    $starttimeh = $slottime['hour'];
+    $disptimeh = ($starttimeh > 12) ? ($starttimeh - $timeformat) : $starttimeh;
+    $starttimem = $slottime['minute'];
+    $slotendmins = $starttimeh * 60 + $starttimem + $interval;
+
+    // default to the first displayed provider
+    $providerid = $providers[0]['id'];
+
+    echo "<tr><td class='timeslot'>";
+    echo "<a href='javascript:newEvt(" . attr_js($startampm) . "," . attr_js($starttimeh) . "," . attr_js($starttimem) . "," . attr_js($Date) . "," . attr_js($providerid) . ",0)' title='" . xla('New Appointment') . "' alt='" . xla('New Appointment') . "'>";
+    echo text($disptimeh) . ":" . text($starttimem);
+    echo "</a>";
+    echo "</td></tr>\n";
+}
+echo "</table></div></td>";
+
+
+// This loops once for each provider to be displayed.
+//
+foreach ($providers as $provider) {
+    $providerid = $provider['id'];
+
+    // to specially handle the IN/OUT events I'm doing something new here
+    // for each IN event it will have a duration lasting until the next
+    // OUT event or until the end of the day
+    $tmpTime = $times[0];
+    $calStartMin = ($tmpTime['hour'] * 60) + $tmpTime['minute'];
+    $tmpTime = $times[count($times)-1];
+    $calEndMin = ($tmpTime['hour'] * 60) + $tmpTime['minute'];
+
+    // having a 'title' for the TD makes the date appear by the mouse pointer
+    // this is nice when all you see are times on the left side and no head
+    // row with the dates or day-of-week (DOW)
+    $classForWeekend = is_weekend_day(date('w', $caldate)) ? 'weekend-day' : 'work-day';
+    $provfl = trim($provider['fname'].' '.$provider['lname']);
+    // MDItek: avatar initials for provider column header
+    $mdi_initials = strtoupper(substr($provider['fname'],0,1).substr($provider['lname'],0,1));
+    $mdi_colors = ['#1e0a3c','#ffc107','#5b3d8f','#2d7a4f','#c0392b','#1a6b6b','#7a3a1e','#0d5c5c'];
+    static $mdi_ci2 = 0;
+    $mdi_hdrcolor = $mdi_colors[$mdi_ci2 % count($mdi_colors)]; $mdi_ci2++;
+    echo "<td class='schedule $classForWeekend' title='" . attr($provfl) . "' date='" . attr(date("Ymd",$caldate)) . "' provider='" . attr($providerid) . "'>";
+    echo "<div class='providerheader providerday'>";
+    echo "<span style='display:inline-flex;align-items:center;gap:8px;min-width:0;overflow:hidden;'>";
+    echo "<span style='width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.2);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;border:1.5px solid rgba(255,255,255,.35);'>".text($mdi_initials)."</span>";
+    echo "<span style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>".text($provfl)."</span>";
+    echo "</span>";
+    echo "<a class='providerXbtn userClose' data-username='" . attr($provider['username']) . "'></a>";
+    echo "</div>";
+    echo "<div class='calendar_day'>";
+
+    // For each event...
+    // output a TD with an inner containing DIV positioned 'relative'
+    // within that DIV we place our event DIVs using 'absolute' positioning
+    foreach ($A_EVENTS as $date => $events) {
+        $eventdate = substr($date, 0, 4) . substr($date, 5, 2) . substr($date, 8, 2);
+
+        // determine if events overlap and adjust their width and left position as needed
+        // 26 Feb 2008 - This needs fine tuning or total replacement
+        //             - it doesn't work as well as I'd like - JRM
+        foreach ($times as $slottime) {
+            $starttimeh = $slottime['hour'];
+            $starttimem = $slottime['minute'];
+
+            $slotstartmins = $starttimeh * 60 + $starttimem;
+            $slotendmins = $starttimeh * 60 + $starttimem + $interval;
+
+            $events_in_timeslot = array();
+            foreach ($events as $e1) {
+                // ignore IN event
+                if (($e1['catid'] == 2)) { continue; }
+
+				// skip events without an ID (why they are in the loop, I have no idea)
+                if ($e1['eid'] == "") { continue; }
+
+                // skip events for other providers
+                // $e1['aid']!=0 :With the holidays we included clinic events, they have provider id =0
+                // we dont want to exclude those events from being displayed
+                if ($providerid != $e1['aid'] && $e1['aid'] != 0) { continue; }
+
+                // specially handle all-day events
+                if ($e1['alldayevent'] == 1) {
+                    $tmpTime = $times[0];
+                    if (strlen($tmpTime['hour']) < 2) { $tmpTime['hour'] = "0".$tmpTime['hour']; }
+                    if (strlen($tmpTime['minute']) < 2) { $tmpTime['minute'] = "0".$tmpTime['minute']; }
+                    $e1['startTime'] = $tmpTime['hour'].":".$tmpTime['minute'].":00";
+                    $e1['duration'] = ($calEndMin - $calStartMin) * 60;  // measured in seconds
+                }
+
+                // create a numeric start and end for comparison
+                $starth = substr($e1['startTime'], 0, 2);
+                $startm = substr($e1['startTime'], 3, 2);
+                $e1Start = ($starth * 60) + $startm;
+                $e1End = $e1Start + $e1['duration']/60;
+
+                // three ways to overlap:
+                // start-in, end-in, span
+                if ((($e1Start >= $slotstartmins) && ($e1Start < $slotendmins)) // start-in
+                   || (($e1End > $slotstartmins) && ($e1End <= $slotendmins)) // end-in
+                   || (($e1Start < $slotstartmins) && ($e1End > $slotendmins))) // span
+                {
+					array_push($events_in_timeslot, $e1['eid']);
+					if($e1['catid'] == 3)
+					{
+						array_pop($events_in_timeslot);
+						array_unshift($events_in_timeslot, $e1['eid']);
+					}
+                }
+
+            }
+            $leftpos = 0;
+            $width = 100;
+            if (!empty($events_in_timeslot)) {
+                $width = 100 / count($events_in_timeslot);
+
+                // loop over the events in this timeslot and adjust their width
+                foreach ($events_in_timeslot as $eid) {
+                    // set the width if not already set or if the current width is smaller
+                    // than was was previously set
+                    if (!isset($eventPositions[$eid]->width))
+                    {
+                        $eventPositions[$eid] = new stdClass();
+                        $eventPositions[$eid]->width = $width;
+                    } else if ($eventPositions[$eid]->width > $width)
+                    {
+                        $eventPositions[$eid]->width = $width;
+                    }
+
+                    // set the left position if not already set or if the current left is
+                    // greater than what was previously set
+                    if (!isset($eventPositions[$eid]->leftpos))
+                    {
+                        $eventPositions[$eid]->leftpos = $leftpos;
+                    } else if ($eventPositions[$eid]->leftpos < $leftpos)
+                    {
+                        $eventPositions[$eid]->leftpos = $leftpos;
+                    }
+
+                    // increment the leftpos by the width
+                    $leftpos += $width;
+                }
+            }
+        } // end overlap detection
+
+        // now loop over the events for the day and output their DIVs
+        foreach ($events as $event) {
+            // skip events for other providers
+            // yeah, we've got that sort of overhead here... it ain't perfect
+            if ($providerid != $event['aid'] && $event['aid']!=0) { continue; }
+
+            // skip events without an ID (why they are in the loop, I have no idea)
+            if ($event['eid'] == "") { continue; }
+
+            // specially handle all-day events
+            if ($event['alldayevent'] == 1) {
+                $tmpTime = $times[0];
+                if (strlen($tmpTime['hour']) < 2) { $tmpTime['hour'] = "0".$tmpTime['hour']; }
+                if (strlen($tmpTime['minute']) < 2) { $tmpTime['minute'] = "0".$tmpTime['minute']; }
+                $event['startTime'] = $tmpTime['hour'].":".$tmpTime['minute'].":00";
+                $event['duration'] = ($calEndMin - $calStartMin) * 60;  // measured in seconds
+            }
+
+            // figure the start time and minutes (from midnight)
+            $starth = substr($event['startTime'], 0, 2);
+            $startm = substr($event['startTime'], 3, 2);
+            $eStartMin = $starth * 60 + $startm;
+            $dispstarth = ($starth > 12) ? ($starth - $timeformat) : $starth; // used to display the hour
+
+
+             //fix bug 456 and 455
+             //check to see if the event is in the clinic hours range, if not it will not be displayed
+             if  ( (int)$starth < (int)$openhour || (int)$starth > (int)$closehour ){ continue; }
+
+             // Initialize classes
+             $evtClass = "event_appointment"; // Default class for appointments
+             $statusClass = ''; // Initialize status class
+             
+             switch ($event['catid']) {
+                 case 1:  // NO-SHOW appt
+                     $evtClass = "event_noshow";
+                     break;
+                 case 2:  // IN office
+                     $evtClass = "event_in";
+                     break;
+                 case 3:  // OUT of office
+                     $evtClass = "event_out";
+                     break;
+                 case 4:  // VACATION
+                     $evtClass = "event_reserved";
+                     break;
+                 case 6:  // HOLIDAY
+                     $evtClass = "event_holiday";
+                     break;
+                 case 8:  // LUNCH
+                     $evtClass = "event_reserved";
+                     break;
+                 case 11: // RESERVED
+                     $evtClass = "event_reserved";
+                     break;
+                 default: // Some appointment
+                     $evtClass = 'event_appointment';
+                     break;
+             }
+             
+             // Determine the status class based on appointment status
+             switch ($event['apptstatus']) { // Use apptstatus instead of pc_apptstatus
+                 case '-':
+                     $statusClass = 'event-new'; // New Appointment Scheduled
+                     break;
+                 case '@':
+                     $statusClass = 'event-arrived'; // Arrived
+                     break;
+                 case '%':
+                     $statusClass = 'event-undertwentyfour'; // Canceled Under 24 Hours
+                     break;
+                 case 'x':
+                     $statusClass = 'event-cancelled'; // Cancelled
+                     break;
+                case '>':
+                     $statusClass = 'event-checkedout'; // Checked Out
+                     break;
+                case '?':
+                     $statusClass = 'event-noshow'; // No Show
+                     break;
+                 default:
+                     $statusClass = 'event-default'; // Optional: fallback class
+                     break;
+             }
+             
+             // Combine classes
+             $evtClass .= " " . $statusClass; // Combine event class with status class
+             
+             // Allow the event class to override the template
+             $evtClass = $event['eventViewClass'] ?? $evtClass;
+             
+            
+            
+            // Allow the event class to override the template
+            $evtClass = $event['eventViewClass'] ?? $evtClass;
+                    // if this is an IN or OUT event then we have some extra special
+            // processing to be done
+            // the IN event creates a DIV until the OUT event
+            // or, without an OUT DIV matching the IN event
+            // then the IN event runs until the end of the day
+            if ($event['catid'] == 2 && !$event['pid']) {
+              if (!empty($event['duration']) && $event['duration'] > 0) {
+                  // respect actual duration
+              } else {
+                  // fallback ONLY if no duration
+                  $event['duration'] = ($calEndMin - $eStartMin) * 60;
+              }
+          }
+
+            // calculate the TOP value for the event DIV
+            // diff between event start and schedule start
+            $eMinDiff = $eStartMin - $calStartMin;
+            // diff divided by the time interval of the schedule
+            $eStartInterval = $eMinDiff / $interval;
+            // times the interval height
+            $eStartPos = $eStartInterval * $timeslotHeightVal;
+            $evtTop = $eStartPos.$timeslotHeightUnit;
+
+            // calculate the HEIGHT value for the event DIV
+            // diff between end and start of event
+            $eEndMin = $eStartMin + ($event['duration']/60);
+            // prevent the overall height of the event from going beyond the bounds
+            // of the time table
+            if ($eEndMin > $calEndMin) { $eEndMin = $calEndMin + $interval; }
+            $eMinDiff = $eEndMin - $eStartMin;
+            // diff divided by the time interval of the schedule
+            $eEndInterval = $eMinDiff / $interval;
+            // times the interval height
+            $eHeight = $eEndInterval * $timeslotHeightVal;
+            if($event['catid']==3)
+            {
+                // An "OUT" that is "zero duration" still needs height so we can click it.
+                $eHeight = $eEndInterval==0 ? $timeslotHeightVal : $eHeight ;
+            }
+            $evtHeight = $eHeight.$timeslotHeightUnit;
+
+            // determine the DIV width based on any overlapping events
+            // see further above for the overlapping calculation code
+            $divWidth = "";
+            $divLeft = "";
+            if (isset($eventPositions[$event['eid']])) {
+                $divWidth = "width: ".$eventPositions[$event['eid']]->width."%";
+                $divLeft = "left: ".$eventPositions[$event['eid']]->leftpos."%";
+            }
+
+            $eventid = $event['eid'];
+            // MDItek fix: only flag prov=true for actual therapy group events (has gid),
+            // NOT for regular patient appointments whose category happens to have pc_cattype=1
+            $pccattype = (!empty($event['gid'])) ? 'true' : '';
+            $patientid = $event['pid'];
+            $commapos = strpos(($event['patient_name'] ?? ''), ",");
+            $lname = substr(($event['patient_name'] ?? ''), 0, $commapos);
+            $fname = substr(($event['patient_name'] ?? ''), $commapos + 2);
+            $patient_dob = oeFormatShortDate($event['patient_dob']);
+            $patient_age = $event['patient_age'];
+            $catid = $event['catid'];
+            $comment = $event['hometext'];
+            $catname = $event['catname'];
+            $title = "Age $patient_age ($patient_dob)";
+
+            //Variables for therapy groups
+            $groupid = $event['gid'];
+            $groupname = $event['group_name'];
+            $grouptype = $event['group_type'];
+            $groupstatus = $event['group_status'];
+            $groupcounselors = '';
+            foreach($event['group_counselors'] as $counselor){
+                $groupcounselors .= getUserNameById($counselor) . " \n ";
+            }
+            $content = "";
+
+            if ($comment && $GLOBALS['calendar_appt_style'] < 4) $title .= " " . $comment;
+
+            // the divTitle is what appears when the user hovers the mouse over the DIV
+            if($groupid)
+                $divTitle = xl('Counselors') . ": \n" . $groupcounselors . " \n";
+            else
+                $divTitle = $provider["fname"] . " " . $provider["lname"];
+            $result = sqlStatement("SELECT name,id,color FROM facility WHERE id=(SELECT pc_facility FROM openemr_postcalendar_events WHERE pc_eid=?)", [$eventid]);
+            $row = sqlFetchArray($result);
+            $color=$event["catcolor"];
+            if($GLOBALS['event_color']==2)
+            $color=$row['color'];
+            $divTitle .= "\n" . $row['name'];
+
+            if ($catid == 2 || $catid == 3 || $catid == 4 || $catid == 8 || $catid == 11) {
+                if      ($catid ==  2) $catname = xl("IN");
+                else if ($catid ==  3) $catname = xl("OUT");
+                else if ($catid ==  4) $catname = xl("VACATION");
+                else if ($catid ==  8) $catname = xl("LUNCH");
+                else if ($catid == 11) $catname = xl("RESERVED");
+
+                $atitle = $catname;
+                if ($comment) $atitle .= " $comment";
+                $divTitle .= "\n[".$atitle ."]";
+                $content .= text($catname);
+                if ($event['recurrtype'] > 0) {
+                    $content .= "<img class='border-0' src='{$this->_tpl_vars['TPL_IMAGE_PATH']}/repeating8.png' style='margin: 0 2px 0 2px;' title='" . xla("Repeating event") . "' alt='" . xla("Repeating event") . "' />";
+                }
+                if ($comment) $content .= " " . text($comment);
+            }
+            else {
+                // some sort of patient appointment
+                if($groupid)
+                    $divTitle .= "\r\n[" . $catname . ' ' . $comment . "]" . $groupname;
+                else
+                    $divTitle .= "\r\n[" . $catname . ' ' . $comment . "]" . $fname . " " . $lname;
+                $content .= "<span class='appointment'>";
+                $content .= create_event_time_anchor($dispstarth.":".$startm);
+                if ($event['recurrtype'] > 0) $content .= "<img src='{$this->_tpl_vars['TPL_IMAGE_PATH']}/repeating8.png' border='0' style='margin:0px 2px 0px 2px;' title='" . xla("Repeating event") . "' alt='" . xla("Repeating event") . "'>";
+                $content .= '&nbsp;' . text($event['apptstatus']);
+                if ($patientid) {
+                    $link_title = $fname . " " . $lname . " \n";
+                    $link_title .= xl('Age') . ": " . $patient_age . "\n" . xl('DOB') . ": " . $patient_dob . " $comment" . "\n";
+                    $link_title .= "(" . xl('Click to view') . ")";
+                    $content .= "<a class='link_title' data-pid='". attr($patientid) . "' href='javascript:goPid(" . attr_js($patientid) . ")' title='" . attr($link_title) . "'>";
+                    $content .= "<i class='fas fa-user text-success' onmouseover=\"javascript:ShowImage(" . attr_js($GLOBALS['webroot']."/controller.php?document&retrieve&patient_id=".attr($patientid)."&document_id=-1&as_file=false&original_file=true&disable_exit=false&show_original=true&context=patient_picture") . ");\" onmouseout=\"javascript:HideImage();\" title='" . attr($link_title) . "'></i>";
+                    if ($catid == 1) $content .= "<s>";
+                    $content .= text($lname);
+                    if ($GLOBALS['calendar_appt_style'] != 1) {
+                        $content .= "," . text($fname);
+                        if ($event['title'] && $GLOBALS['calendar_appt_style'] >= 3) {
+                            $content .= "(" . text($event['title']);
+                            if ($event['hometext'] && $GLOBALS['calendar_appt_style'] >= 4)
+                            $content .= ": <span class='text-success'>" . text(trim($event['hometext'])) . "</span>";
+                            $content .= ")";
+                        }
+                    }
+                    if ($catid == 1) $content .= "</s>";
+                    $content .= "</a>";
+                }
+                elseif($groupid){
+                    $divTitle .= "\n" . getTypeName($grouptype) . "\n";
+                    $link_title = '';
+                    $link_title .= $divTitle ."\n";
+                    $link_title .= "(" . xl('Click to view') . ")";
+                    $content .= "<a href='javascript:goGid(" . attr_js($groupid) . ")' title='" . attr($link_title) . "'>";
+                    $content .= "<i class='fas fa-user text-primary' title='" . attr($link_title) . "'></i>";
+                    if ($catid == 1) $content .= "<s>";
+                    $content .= text($groupname);
+                    if ($GLOBALS['calendar_appt_style'] != 1) {
+                        if ($event['title'] && $GLOBALS['calendar_appt_style'] >= 3) {
+                            $content .= "(" . text($event['title']);
+                            if ($event['hometext'] && $GLOBALS['calendar_appt_style'] >= 4)
+                            $content .= ": <span class='text-success'>" . text(trim($event['hometext'])) . "</span>";
+                            $content .= ")";
+                        }
+                    }
+                    if ($catid == 1) $content .= "</s>";
+                    $content .= "</a>";
+
+                    //Add class to wrapping div so EditEvent js function can differentiate between click on group and patient
+                    $evtClass .= ' groups ';
+                }
+                else {
+                      //Category Clinic closaed or holiday take the event title
+                    if ( $catid ==6  || $catid == 7){
+                         $content = xlt($event['title']);
+                    }else{
+                        // no patient id, just output the category name
+                        $content .= text(xl_appt_category($catname));
+                    }
+                }
+                $content .= "</span>";
+            }
+
+            $divTitle .= "\n(" . xl('click to edit') . ")";
+
+       if($_SESSION['pc_facility'] == 0){
+          // a special case for the 'IN' event this puts the time ABOVE
+          // the normal DIV so it doesn't overlap another event DIV and include the time
+          if ($event['catid'] == 2 && !$event['pid']) {
+              $inTop = 20+($eStartPos - $timeslotHeightVal).$timeslotHeightUnit;
+              echo "<div data-eid='" . attr($eventid) . "' data-hour='" . attr($starth) . "' data-minute='" . attr($startm) . "' class='" . attr($evtClass) . " event in_start' style='top:".$inTop.
+                  "; height:".$timeslotHeightVal.$timeslotHeightUnit.
+                  "; $divWidth".
+                  "; $divLeft".
+                  "; border: none".
+                  "' title='" . attr($divTitle) . "'".
+                  " id='" . attr($eventdate) . "-" . attr($eventid) . "-" . attr($pccattype) . "'".
+                  ">";
+              $content = text($dispstarth) . ':' . text($startm) . ' &nbsp;·&nbsp; Edit Provider Office Hours';
+              echo $content;
+              echo "</div>\n";
+          }
+
+          // output the DIV and content
+          // For "OUT" events, applying the background color in CSS.
+
+          if ($event['catid'] != "6") {
+            $background_string = "; background-color:" . attr($color);
+            
+            // Determine the class for the event DIV based on appointment status
+            $statusClass = '';
+            switch ($event['pc_apptstatus']) {
+                case '-':
+                    $statusClass = 'event-new'; // New Appointment Scheduled
+                    break;
+                case '@':
+                    $statusClass = 'event-arrived'; // Arrived
+                    break;
+                case 'no-show':
+                    $statusClass = 'event-no-show'; // No-Show
+                    break;
+                case 'cancelled':
+                    $statusClass = 'event-cancelled'; // Cancelled
+                    break;
+                default:
+                    $statusClass = 'event-default'; // Optional: fallback class
+                    break;
+            }
+        
+            // Output the event DIV with the appropriate classes
+            echo "<div data-eid='" . attr($eventid) . "' class='" . attr($evtClass) . " event " . attr($statusClass) . "' style='top:".$evtTop."; height:".$evtHeight.
+            $background_string.
+            "; $divWidth".
+            "; $divLeft".
+            "' title='" . attr($divTitle) . "'".
+            " id='" . attr($eventdate) . "-" . attr($eventid) . "-" . attr($pccattype) . "'>".
+            "<span>" . text($event['apptstatus']) . "</span>"; // Display status text
+        }
+          // second part for the special IN event
+          if ($event['catid'] != 2) { echo $content; }
+          echo "</div>\n";
+       }
+       elseif($_SESSION['pc_facility'] == $row['id']){
+        if ($event['catid'] == 2 && !$event['pid']) {
+               $inTop = 20+($eStartPos - $timeslotHeightVal).$timeslotHeightUnit;
+               echo "<div data-eid='" . attr($eventid) . "' data-hour='" . attr($starth) . "' data-minute='" . attr($startm) . "' class='" . attr($evtClass) . " event in_start' style='top:".$inTop.
+                   "; height:".$timeslotHeightVal.$timeslotHeightUnit.
+                   "; $divWidth".
+                   "; $divLeft".
+                   "; border: none".
+                   "' title='" . attr($divTitle) . "'".
+                   " id='" . attr($eventdate) . "-" . attr($eventid) . "-" . attr($pccattype) . "'".
+                   ">";
+               $content = text($dispstarth) . ':' . text($startm) . ' &nbsp;·&nbsp; Edit Provider Office Hours';
+               echo $content;
+               echo "</div>\n";
+           }
+
+           // output the DIV and content
+           // For "OUT" events, applying the background color in CSS.
+          $background_string= "; background-color:".$event["catcolor"];
+          echo "<div data-eid='" . attr($eventid) . "' class='" . attr($evtClass) . " event' style='top:".$evtTop."; height:".$evtHeight.
+               $background_string.
+               "; $divWidth".
+               "; $divLeft".
+               "' title='" . attr($divTitle) . "'".
+               " id='" . attr($eventdate) . "-" . attr($eventid) . "-" . attr($pccattype) . "'".
+               ">";
+           // second part for the special IN event
+           if ($event['catid'] != 2) { echo $content; }
+           echo "</div>\n";
+       }
+       else{
+
+        if ($event['catid'] == 2 && !$event['pid']) {
+               $inTop = 20+($eStartPos - $timeslotHeightVal).$timeslotHeightUnit;
+               echo "<div data-eid='" . attr($eventid) . "' data-hour='" . attr($starth) . "' data-minute='" . attr($startm) . "' class='" . attr($evtClass) ." event in_start' style='top:".$inTop.
+                   "; height:".$timeslotHeightVal.$timeslotHeightUnit.
+                   "; $divWidth".
+                   "; $divLeft".
+                   "; background: var(--gray300)".
+                   "; border: none".
+                   "' title='" . attr($divTitle) . "'".
+                   " id='" . attr($eventdate) . "-" . attr($eventid) . "-" . attr($pccattype) . "'".
+                   ">";
+               $content = "<span class='text-danger text-center font-weight-bold'>" . text($row['name']) . "</span>";
+               echo $content;
+               echo "</div>\n";
+           }
+
+           // output the DIV and content
+           echo "<div data-eid='" . attr($eventid) . "' class='" . attr($evtClass) . " event' style='top:".$evtTop."; height:".$evtHeight.
+               "; background-color: var(--gray300)".
+               "; $divWidth".
+               "; $divLeft".
+               "' title='" . attr($divTitle) . "'".
+               " id='" . attr($eventdate) . "-" . attr($eventid) . "-" . attr($pccattype) . "'".
+               ">";
+           // second part for the special IN event
+           if ($event['catid'] != 2) { echo "<span class='text-danger text-center font-weight-bold'>" . text($row['name']) . "</span>"; }
+           echo "</div>\n";
+       }
+  } // end EVENT loop
+
+   echo "</div>";
+
+   } // end date
+
+    echo "</td>\n";
+
+} // end provider loop
+//============================================================================================================================
+echo " </tr>\n";
+echo "</table>\n";
+echo "</div>\n";
+ ?>
+</div>  <!-- end bigCal DIV -->
+</div>  <!-- end bottom DIV -->
+</div>
+</form>
+</div>
+
+<script>
+    var tsHeight=<?php  echo js_escape($timeslotHeightVal.$timeslotHeightUnit);  ?>;
+    var tsHeightNum=<?php  echo js_escape($timeslotHeightVal);  ?>;
+
+    function providerXclick(e) {
+        var username=$(this).data('username');
+        if (username=='__PC_ALL__') {
+            $("#pc_username option:gt(0)").prop("selected", true);
+        } else {
+            $("#pc_username option[value="+username+"]").prop("selected", false);
+            // $(this).closest('td').remove();
+        }
+        ChangeProviders($("#pc_username"));
+    }
+
+    // Guard: define setupDirectTime if not already provided by an included script
+    if (typeof setupDirectTime !== 'function') {
+        function setupDirectTime() { /* noop — defined elsewhere or not needed */ }
+    }
+
+    $(function () {
+        setupDirectTime();
+        $("#pc_username").change(function() { ChangeProviders(this); });
+        $("#pc_facility").change(function() { ChangeProviders(this); });
+        //$("#dayview").click(function() { ChangeView(this); });
+        $("#weekview").click(function() { ChangeView(this); });
+        $("#monthview").click(function() { ChangeView(this); });
+        //$("#yearview").click(function() { ChangeView(this); });
+        $(".tdDatePicker").click(function() { ChangeDate(this); });
+        $("#datePicker .tdDatePicker").mouseover(function() {
+          $(this).toggleClass("tdDatePickerHighlightCurrent");
+        });
+        $("#datePicker .tdDatePicker").mouseout(function() {
+          $(this).toggleClass("tdDatePickerHighlightCurrent");
+        });
+        $("#printview").click(function() { PrintView(this); });
+        $(".event").dblclick(function() { EditEvent(this); });
+        $(".event").mouseover(function() { $(this).toggleClass("event_highlight"); });
+        $(".event").mouseout(function() { $(this).toggleClass("event_highlight"); });
+        /* Single-click on the IN edit button opens the provider schedule editor */
+        $(".in_start").on("click", function(e) {
+            e.stopPropagation();
+            EditEvent(this);
+        });
+        $(".tdMonthName-small").click(function() {
+
+            dpCal = $("#datePicker > table");
+            mp = $("#monthPicker");
+            mp.width(dpCal.width());
+            mp.toggle();
+        });
+
+        //$('div.providerheader').find('*').css('font-size', $('div.providerheader:first').css('font-size')).addClass(' mx-1 p-0 border-0 align-middle');
+        $('.providerXbtn').on('click', providerXclick);
+
+    });
+
+    /* edit an existing event */
+    var EditEvent = function(eObj) {
+    let parts = eObj.id.split("-");
+    let eventId = parts[1];
+    let date = parts[0];
+
+    // detect provider schedule events
+    if ($(eObj).hasClass('event_in') || 
+        $(eObj).hasClass('event_out') || 
+        $(eObj).hasClass('event_reserved')) {
+
+        top.restoreSession();
+
+        dlgopen(
+            'add_edit_event.php?eid=' + eventId + '&prov=true',
+            '_blank',
+            900,
+            700,
+            '',
+            ''
+        );
+
+        return true;
+    }
+
+    // default = patient
+    oldEvt(parts[0], parts[1], parts[2]);
+}
+
+
+    /* change the current date based upon what the user clicked in
+     * the datepicker DIV
+     */
+    var ChangeDate = function(eObj) {
+        baseURL = "<?php echo pnModURL(__POSTCALENDAR__,'user','view',
+                        array('tplview'=>($template_view ?? ''),
+                        'viewtype'=>$viewtype,
+                        'Date'=> '~REPLACEME~',
+                        'pc_username'=>($pc_username ?? ''),
+                        'pc_category'=>($category ?? ''),
+                        'pc_topic'=>($topic ?? ''))); ?>";
+        newURL = baseURL.replace(/~REPLACEME~/, eObj.id);
+        document.location.href=newURL;
+    }
+
+    /* pop up a window to print the current view
+     */
+    var PrintView = function (eventObject) {
+        printURL = "<?php echo pnModURL(__POSTCALENDAR__,'user','view',
+                        array('tplview'=>($template_view ?? ''),
+                        'viewtype'=>$viewtype,
+                        'Date'=> $Date,
+                        'print'=> 1,
+                        'pc_username'=>($pc_username ?? ''),
+                        'pc_category'=>($category ?? ''),
+                        'pc_topic'=>($topic ?? ''))); ?>";
+        window.open(printURL,'printwindow','width=740,height=480,toolbar=no,location=no,directories=no,status=no,menubar=yes,scrollbars=yes,copyhistory=no,resizable=yes');
+        return false;
+    }
+
+    /* change the provider(s)
+     */
+    var ChangeProviders = function (eventObject) {
+        $('#theform').submit();
+    };
+
+    /* change the calendar view */
+    var ChangeView = function (eventObject) {
+        if (eventObject.id == "dayview") {
+            $("#viewtype").val('day');
+        }
+        else if (eventObject.id == "weekview") {
+            $("#viewtype").val('week');
+        }
+        else if (eventObject.id == "monthview") {
+            $("#viewtype").val('month');
+        }
+        else if (eventObject.id == "yearview") {
+            $("#viewtype").val('year');
+        }
+        $('#theform').submit();
+    };
+
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+
+    /* MDItek: Provider pills from hidden select */
+    (function() {
+        var sel = document.getElementById('pc_username');
+        if (!sel) return;
+        var container = document.createElement('div');
+        container.id = 'mdi-provider-pills';
+        var colors = ['#1e0a3c','#ffc107','#5b3d8f','#2d7a4f','#c0392b','#1a6b6b','#7a3a1e','#0d5c5c'];
+        var ci = 0;
+        Array.from(sel.options).forEach(function(opt) {
+            var pill = document.createElement('div');
+            pill.className = 'mdi-prov-pill' + (opt.selected ? ' selected' : '');
+            pill.dataset.value = opt.value;
+            var name = opt.textContent.trim();
+            var initials = '?';
+            if (opt.value === '__PC_ALL__') {
+                initials = 'ALL';
+            } else {
+                var parts = name.replace(',','').split(' ').filter(Boolean);
+                if (parts.length >= 2) initials = (parts[0][0]||'') + (parts[1][0]||'');
+                else if (parts.length === 1) initials = parts[0].slice(0,2);
+                initials = initials.toUpperCase();
+            }
+            var avatarColor = (opt.value === '__PC_ALL__') ? '#1e0a3c' : colors[ci++ % colors.length];
+            pill.innerHTML =
+                '<div class="mdi-prov-avatar" style="background:' + avatarColor + '">' + initials + '</div>' +
+                '<div class="mdi-prov-name">' + name + '</div>' +
+                '<div class="mdi-prov-check">' + (opt.selected ? '&#10003;' : '') + '</div>';
+            pill.addEventListener('click', function() {
+                opt.selected = !opt.selected;
+                pill.classList.toggle('selected', opt.selected);
+                pill.querySelector('.mdi-prov-check').innerHTML = opt.selected ? '&#10003;' : '';
+                ChangeProviders(sel);
+            });
+            container.appendChild(pill);
+        });
+        sel.parentNode.insertBefore(container, sel.nextSibling);
+    })();
+
+    /* MDItek: Flex row layout — sidebar + main content */
+    (function() {
+        var sidebar = document.getElementById('bottomLeft');
+        var main    = document.querySelector('.page-content-wrapper');
+        if (!sidebar || !main) return;
+        var row = document.createElement('div');
+        row.id = 'mdi-body-row';
+        sidebar.parentNode.insertBefore(row, sidebar);
+        row.appendChild(sidebar);
+        row.appendChild(main);
+        main.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;';
+        var calBody = main.querySelector('.calsearch_body');
+        if (calBody) calBody.style.cssText = 'overflow-y:auto;flex:1;padding:0 !important;';
+    })();
+
+    /* MDItek: Dot indicators on mini-cal for days with appointments */
+    (function() {
+        var dots = new Set();
+        document.querySelectorAll('.event[id]').forEach(function(el) {
+            var parts = el.id.split('-');
+            if (parts[0] && parts[0].length === 8) dots.add(parts[0]);
+        });
+        dots.forEach(function(dateStr) {
+            var td = document.getElementById(dateStr);
+            if (td) td.classList.add('mdi-has-appt');
+        });
+    })();
+
+   
+ /* Open Provider Schedule tab */
+ function mdiOpenProviderSchedule() {
+        top.restoreSession();
+
+        let provider = $('#pc_username').val();
+        if (Array.isArray(provider)) provider = provider[0];
+
+        // Always use today's actual date for the Set Provider Schedule dialog
+        var _today = new Date();
+        var _pad   = function(n) { return String(n).padStart(2, '0'); };
+        var todayYMD = String(_today.getFullYear()) + _pad(_today.getMonth() + 1) + _pad(_today.getDate());
+        // add_edit_event.php expects YYYYMMDD in the date param
+        var date = todayYMD;
+
+        // Default time — overridden if an IN event exists on screen
+        let hour   = '08';
+        let minute = '00';
+        let ampm   = 1; // 1=AM 2=PM
+
+        // Read raw 24-hour time from data-hour/data-minute stamped by PHP on the in_start div
+        let inDiv = document.querySelector('.event_in.in_start[data-hour]');
+        if (inDiv) {
+            let h = parseInt(inDiv.dataset.hour,   10);
+            let m = parseInt(inDiv.dataset.minute, 10);
+            if (!isNaN(h) && !isNaN(m)) {
+                ampm   = h >= 12 ? 2 : 1;
+                hour   = String(h).padStart(2, '0');
+                minute = String(m).padStart(2, '0');
+            }
+        }
+
+        // Build "until" date 1 year from today in YYYY-MM-DD (what add_edit_event.php expects)
+        var untilParam = '&recurrend=' +
+            String(_today.getFullYear() + 1) + '-' +
+            _pad(_today.getMonth() + 1) + '-' +
+            _pad(_today.getDate());
+
+        dlgopen(
+            'add_edit_event.php?prov=true' +
+            '&userid='     + encodeURIComponent(provider) +
+            '&date='       + encodeURIComponent(date) +
+            '&startampm='  + ampm +
+            '&starttimeh=' + hour +
+            '&starttimem=' + minute +
+            '&catid=2'     + // IN OFFICE
+            untilParam,
+            '_blank',
+            900,
+            700,
+            '',
+            ''
+        );
+    }
+</script>
+
+</body>
+</html>

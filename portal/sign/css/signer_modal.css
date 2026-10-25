@@ -1,0 +1,290 @@
+/**
+ *  Patient Portal
+ *
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2016-2022 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
+
+html,
+body {
+  touch-action: none;
+}
+
+@media (max-width: 1180px) {
+  #openSignModal .modal-xl {
+    min-width: 98vw !important;
+  }
+}
+
+/* stylelint-disable */
+.embed-responsive-21by7 {
+  padding-top: 36% !important;
+}
+/* stylelint-enable */
+
+/* stylelint-disable */
+.signature-pad-body {
+  border: 1px solid #e8e8e8;
+  -webkit-box-direction: normal;
+  -webkit-box-orient: vertical;
+  display: flex;
+  flex-direction: column;
+  padding: 0.1rem;
+  position: relative;
+}
+/* stylelint-enable */
+
+/* stylelint-disable */
+.signature-pad-content {
+  align-items: flex-end;
+  background: #fff;
+  -webkit-box-align: initial;
+  -webkit-box-pack: initial;
+  display: flex;
+  -ms-flex-align: initial;
+  -ms-flex-pack: initial;
+  justify-content: flex-start;
+  margin: 0;
+  user-select: none;
+}
+/* stylelint-enable */
+
+.signature-pad-content canvas {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  touch-action: none;
+  width: 100%;
+}
+
+.signature-pad-footer {
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* stylelint-disable */
+.signature-pad-actions {
+  -webkit-box-pack: justify;
+  display: flex;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem;
+}
+/* stylelint-enable */
+
+.sigNav {
+  display: none;
+  height: 2.25em;
+  list-style-type: none;
+  margin: 0;
+  position: relative;
+}
+
+.signature {
+  cursor: pointer;
+  height: 6rem !important;
+  width: auto !important;
+  z-index: 5 !important;
+}
+
+.signature img {
+  color: var(--danger) !important;
+  cursor: pointer;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+#openSignModal .modal-header {
+  padding: 2px;
+}
+
+#openSignModal .modal-open {
+  padding-right: 0;
+}
+
+#openSignModal .modal-header .input-group {
+  margin-left: 5%;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MDITek Portal — Signature Modal Design Override
+   Appended to signer_modal.css
+══════════════════════════════════════════════════════════════════ */
+
+/* Modal dialog shell */
+#openSignModal .modal-dialog {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+#openSignModal .modal-content {
+  border: 1px solid #e2e6ed !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(30,10,60,.18) !important;
+  font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif !important;
+}
+
+/* Modal header */
+#openSignModal .modal-header {
+  background: #1e0a3c !important;
+  color: #fff !important;
+  padding: 14px 18px !important;
+  border-radius: 14px 14px 0 0 !important;
+  border-bottom: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#openSignModal .modal-header .modal-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+#openSignModal .modal-header .close {
+  color: rgba(255,255,255,.7) !important;
+  font-size: 20px !important;
+  opacity: 1 !important;
+}
+#openSignModal .modal-header .close:hover { color: #fff !important; }
+
+/* Body / canvas area */
+.signature-pad-body {
+  border: none !important;
+  padding: 0 !important;
+  background: #f0f2f5 !important;
+}
+
+.signature-pad-content {
+  background: #f0f2f5 !important;
+  padding: 16px !important;
+  gap: 0 !important;
+}
+
+/* Canvas wrapper — the actual drawing area */
+.embed-responsive-21by7 {
+  background: #ffffff !important;
+  border: 2px solid #e2e6ed !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 2px 8px rgba(30,10,60,.06) !important;
+}
+
+/* Footer / action area */
+.signature-pad-footer {
+  background: #fff !important;
+  border-top: 1px solid #e2e6ed !important;
+  padding: 14px 18px !important;
+  margin: 0 !important;
+}
+
+.signature-pad-footer .description {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  color: #6b7280 !important;
+  margin-bottom: 10px !important;
+}
+
+/* Button group */
+.signature-pad-actions {
+  background: transparent !important;
+  gap: 6px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-start !important;
+}
+
+/* All buttons in the modal */
+.signature-pad-actions .btn {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  transition: all .14s !important;
+  letter-spacing: .01em !important;
+}
+
+/* Clear button */
+.signature-pad-actions .btn.clear,
+.signature-pad-actions [data-action="clear"] {
+  background: #f1f5f9 !important;
+  border: 1.5px solid #e2e6ed !important;
+  color: #475569 !important;
+}
+.signature-pad-actions .btn.clear:hover {
+  background: #e2e6ed !important;
+  color: #1e0a3c !important;
+}
+
+/* Use Current / Place button */
+.signature-pad-actions [data-action="place"],
+#signatureModal {
+  background: #f5f2fc !important;
+  border: 1.5px solid #e8e0f5 !important;
+  color: #2d1260 !important;
+}
+.signature-pad-actions [data-action="place"]:hover {
+  background: #e8e0f5 !important;
+}
+
+/* Cancel button */
+.signature-pad-actions .btn-danger,
+.signature-pad-actions [data-dismiss="modal"] {
+  background: #fff1f2 !important;
+  border: 1.5px solid #fecdd3 !important;
+  color: #be123c !important;
+}
+.signature-pad-actions .btn-danger:hover,
+.signature-pad-actions [data-dismiss="modal"]:hover {
+  background: #ffe4e6 !important;
+}
+
+/* Sign and Save button — primary CTA */
+.signature-pad-actions .btn.save,
+.signature-pad-actions [data-action="save_signature"] {
+  background: linear-gradient(135deg, #2d1260, #8b5cf6) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(45,18,96,.3) !important;
+}
+.signature-pad-actions .btn.save:hover,
+.signature-pad-actions [data-action="save_signature"]:hover {
+  box-shadow: 0 4px 14px rgba(45,18,96,.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Signatory label */
+#labelName {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #2d1260 !important;
+  margin: 0 0 0 4px !important;
+  align-self: center !important;
+}
+
+/* Existing signature display (thumbnail) */
+.signature {
+  border: 2px solid #e2e6ed !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  padding: 4px !important;
+}
+.signature img {
+  border-radius: 6px !important;
+}
+
+/* Trigger button in home.php — "My Signature" card */
+a[href="#openSignModal"],
+button[data-target="#openSignModal"],
+[onclick*="openSignModal"] {
+  /* Styled via portal-shared.css .btn-primary, no override needed */
+}

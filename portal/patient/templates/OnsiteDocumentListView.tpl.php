@@ -1,0 +1,999 @@
+<?php
+
+/**
+ * Patient Portal
+ *
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @author    Tyler Wrenn <tyler@tylerwrenn.com>
+ * @copyright Copyright (c) 2016-2020 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2020 Tyler Wrenn <tyler@tylerwrenn.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Common\Forms\CoreFormToPortalUtility;
+use OpenEMR\Core\Header;
+use OpenEMR\Services\DocumentTemplates\DocumentTemplateService;
+
+$pid = $this->cpid;
+$recid = $this->recid;
+$docid = $this->docid;
+$help_id = $this->help_id;
+$is_module = $this->is_module;
+$is_portal = $this->is_portal;
+$is_dashboard = (empty($is_module) && empty($is_portal));
+$category = $this->save_catid;
+$new_filename = $this->new_filename;
+$webroot = $GLOBALS['web_root'];
+$encounter = '';
+$include_auth = true;
+// for location assign
+$referer = $GLOBALS['web_root'] . "/controller.php?document&upload&patient_id=" . attr_url($pid) . "&parent_id=" . attr_url($category) . "&";
+
+if (empty($is_module)) {
+    $this->assign('title', xlt("Patient Portal") . " | " . xlt("Documents"));
+} else {
+    $this->assign('title', xlt("Document Templates"));
+}
+$this->assign('nav', 'onsitedocuments');
+
+$catname = '';
+if ($category) {
+    $result = sqlQuery("SELECT name FROM categories WHERE id = ?", array($category));
+    $catname = $result['name'] ?: '';
+}
+$catname = $catname ?: xlt("Onsite Portal Reviewed");
+
+if (!$docid) {
+    $docid = 'Privacy Document';
+}
+
+$isnew = false;
+$ptName = $_SESSION['ptName'] ?? $pid;
+$cuser = $_SESSION['sessionUser'] ?? $_SESSION['authUserID'];
+
+$templateService = new DocumentTemplateService();
+
+// ── Template file resolver (no DB schema changes needed) ──────────────────
+// DocumentTemplateService builds the file path from template_name directly.
+// If the file on disk uses underscores (Insurance_Info.tpl) but the DB name
+// has spaces ("Insurance Info"), it 404s. We fix this by subclassing the
+// service call: resolve the actual filename from disk before rendering.
+$_tpl_dir = $GLOBALS['OE_SITE_DIR'] . '/documents/onsite_portal_documents/';
+$_tpl_disk_map = []; // lowercase-no-ext => real filename (with ext)
+if (is_readable($_tpl_dir)) {
+    foreach (array_diff(scandir($_tpl_dir), ['.', '..']) as $_df) {
+        $_tpl_disk_map[strtolower(pathinfo($_df, PATHINFO_FILENAME))] = $_df;
+    }
+}
+// Build a corrected docid map: DB template_name => real filename on disk
+$_tpl_resolve_map = [];
+$_tpl_rows = sqlStatement("SELECT id, template_name FROM document_templates WHERE pid = 0 OR pid = ?", [$pid]);
+while ($_tr = sqlFetchArray($_tpl_rows)) {
+    $_tn  = $_tr['template_name'];
+    $_key = strtolower(str_replace(' ', '_', $_tn)); // e.g. "insurance_info"
+    if (isset($_tpl_disk_map[$_key])) {
+        // Spaces-to-underscores matched a real file
+        $_tpl_resolve_map[$_tn] = pathinfo($_tpl_disk_map[$_key], PATHINFO_FILENAME);
+    } elseif (isset($_tpl_disk_map[strtolower($_tn)])) {
+        // Exact name match (already correct, no-op)
+        $_tpl_resolve_map[$_tn] = $_tn;
+    }
+}
+// Output the resolved map as a JS variable so onsitedocuments.js can use it
+// when it calls page.newDocument(cpid, cuser, docType, docid)
+// docType is the template_name — we remap it to the real filename before fetch
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title><?php
+    if ($is_dashboard) {
+        echo xlt("Portal Document Review");
+    } elseif (empty($is_module)) {
+        echo xlt("Patient Portal Documents");
+    } else {
+        echo xlt("Patient Document Templates");
+    }
+    ?>
+    </title>
+    <meta name="description" content="Developed By sjpadgett@gmail.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <?php
+    // some necessary js globals
+    echo "<script>var cpid=" . js_escape($pid) . ";var cuser=" . js_escape($cuser) . ";var ptName=" . js_escape($ptName) .
+        ";var catid=" . js_escape($category) . ";var catname=" . js_escape($catname) . ";</script>";
+    echo "<script>var recid=" . js_escape($recid) . ";var docid=" . js_escape($docid) . ";var isNewDoc=" . js_escape($isnew) . ";var newFilename=" . js_escape($new_filename) . ";var help_id=" . js_escape($help_id) . ";</script>";
+    echo "<script>var isPortal=" . js_escape($is_portal) . ";var isModule=" . js_escape($is_module) . ";var webRoot=" . js_escape($webroot) . ";var webroot_url = webRoot;</script>";
+    echo "<script>var csrfTokenDoclib=" . js_escape(CsrfUtils::collectCsrfToken('doc-lib')) . ";</script>";
+    // translations
+    echo "<script>var alertMsg1='" . xlt("Saved to Patient Documents") . '->' . xlt("Category") . ": " . attr($catname) . "';</script>";
+    echo "<script>var msgSuccess='" . xlt("Updates Successful") . "';</script>";
+    echo "<script>var msgDelete='" . xlt("Delete Successful") . "';</script>";
+    // list of encounter form directories/names (that are patient portal compliant) that use for whitelisting (security)
+    echo "<script>var formNamesWhitelist=" . json_encode(CoreFormToPortalUtility::getListPortalCompliantEncounterForms()) . ";</script>";
+
+    Header::setupHeader(['no_main-theme', 'patientportal-style', 'datetime-picker']);
+    ?>
+    <link href="<?php echo $GLOBALS['web_root']; ?>/portal/sign/css/signer_modal.css?v=<?php echo $GLOBALS['v_js_includes']; ?>" rel="stylesheet">
+    <script src="<?php echo $GLOBALS['web_root']; ?>/portal/sign/assets/signature_pad.umd.js?v=<?php echo $GLOBALS['v_js_includes']; ?>"></script>
+    <script src="<?php echo $GLOBALS['web_root']; ?>/portal/sign/assets/signer_api.js?v=<?php echo $GLOBALS['v_js_includes']; ?>"></script>
+    <script src="<?php echo $GLOBALS['web_root']; ?>/portal/patient/scripts/libs/LAB.min.js"></script>
+    <script>
+    // ── xl() safety shim ────────────────────────────────────────────────────────
+    // utility.js defines xl() but needs language_defs.t to exist first.
+    // We pre-seed it from PHP so xl() never throws "Cannot read properties of undefined".
+    <?php
+    $language = $_SESSION['language_choice'] ?? '1';
+    $lang_res = sqlStatement(
+        "SELECT c.constant_name, d.definition FROM lang_definitions d
+         JOIN lang_constants c ON d.cons_id = c.cons_id WHERE d.lang_id = ?",
+        [$language]
+    );
+    $lang_t = [];
+    while ($lang_row = SqlFetchArray($lang_res)) {
+        $lang_t[$lang_row['constant_name']] = $lang_row['definition'];
+    }
+    ?>
+    // Pre-define language_defs in the shape utility.js expects: { t: { key: translation } }
+    if (typeof language_defs === 'undefined') {
+        var language_defs = { t: <?php echo json_encode($lang_t); ?> };
+    } else if (typeof language_defs.t === 'undefined') {
+        language_defs.t = <?php echo json_encode($lang_t); ?>;
+    }
+    // Bulletproof xl() override — even if utility.js redefines it later,
+    // this ensures the function never crashes during the load race.
+    window.xl = function(string) {
+        try {
+            return (language_defs && language_defs.t && language_defs.t[string])
+                ? language_defs.t[string] : string;
+        } catch(e) { return string; }
+    };
+    </script>
+    <script>
+    // ── xl() safety shim ────────────────────────────────────────────────────
+    <?php
+    $language = $_SESSION['language_choice'] ?? '1';
+    $lang_res = sqlStatement(
+        "SELECT c.constant_name, d.definition FROM lang_definitions d
+         JOIN lang_constants c ON d.cons_id = c.cons_id WHERE d.lang_id = ?",
+        [$language]
+    );
+    $lang_t = [];
+    while ($lang_row = SqlFetchArray($lang_res)) {
+        $lang_t[$lang_row['constant_name']] = $lang_row['definition'];
+    }
+    ?>
+    if (typeof language_defs === 'undefined') {
+        var language_defs = { t: <?php echo json_encode($lang_t); ?> };
+    } else if (typeof language_defs.t === 'undefined') {
+        language_defs.t = <?php echo json_encode($lang_t); ?>;
+    }
+    window.xl = function(string) {
+        try { return (language_defs && language_defs.t && language_defs.t[string]) ? language_defs.t[string] : string; }
+        catch(e) { return string; }
+    };
+    // ── docType resolver: map DB template names to real filenames on disk ──
+    var _tplResolveMap = <?php echo json_encode($_tpl_resolve_map); ?>;
+    var _origNewDocument;
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof page !== 'undefined' && typeof page.newDocument === 'function') {
+            _origNewDocument = page.newDocument.bind(page);
+            page.newDocument = function(cpid, cuser, docType, docid) {
+                var resolved = _tplResolveMap[docType] || docType;
+                return _origNewDocument(cpid, cuser, resolved, docid);
+            };
+        }
+    });
+    // ── 404 logger ──────────────────────────────────────────────────────────
+    (function() {
+        var _o = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(m, url) {
+            this._url = url;
+            this.addEventListener('load', function() {
+                if (this.status === 404) console.error('[Portal] 404:', this._url);
+            });
+            return _o.apply(this, arguments);
+        };
+    })();
+    </script>
+    <script>
+        $LAB.setGlobalDefaults({
+            BasePath: "<?php $this->eprint($this->ROOT_URL); ?>"
+        });
+        $LAB.script("<?php echo $GLOBALS['assets_static_relative']; ?>/underscore/underscore-min.js").script("<?php echo $GLOBALS['assets_static_relative']; ?>/moment/moment.js").script(
+            "<?php echo $GLOBALS['assets_static_relative']; ?>/backbone/backbone-min.js").script("<?php echo $GLOBALS['web_root']; ?>/portal/patient/scripts/app.js?v=<?php echo $GLOBALS['v_js_includes']; ?>").script(
+            "<?php echo $GLOBALS['web_root']; ?>/portal/patient/scripts/model.js?v=<?php echo $GLOBALS['v_js_includes']; ?>").wait().script(
+            "<?php echo $GLOBALS['web_root']; ?>/portal/patient/scripts/view.js?v=<?php echo $GLOBALS['v_js_includes']; ?>").wait()
+    </script>
+    <style>
+    /* ── MDITek Design Tokens ──────────────────────────────────────────────── */
+    :root {
+        --navy:       #1e0a3c;
+        --navy-mid:   #9588e8;
+        --navy-light: #e8e0f5;
+        --navy-pale:  #f5f2fc;
+        --gold:       #9588e8;
+        --bg:         #f0f2f5;
+        --border:     #e2e6ed;
+        --white:      #ffffff;
+        --text:       #1a1a2e;
+        --muted:      #6b7280;
+        --rose:       #f43f5e;
+        --rose-d:     #fff1f2;
+        --violet:     #8b5cf6;
+        --violet-d:   #f5f3ff;
+        --green:      #10b981;
+        --radius:     12px;
+        --nav-h:      54px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+        font-family: 'Montserrat', sans-serif !important;
+        background: var(--bg) !important;
+        color: var(--text);
+        font-size: 13px;
+        min-height: 100vh;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* ── MDITek Navbar ─────────────────────────────────────────────────────── */
+    #pt-nav {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: var(--nav-h);
+        background: var(--white);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        z-index: 1050;
+        gap: 0;
+        box-shadow: 0 1px 4px rgba(30,10,60,.07);
+    }
+    .pt-nav-brand {
+        display: flex; align-items: center; gap: 8px;
+        font-weight: 700; font-size: 15px; color: var(--navy);
+        text-decoration: none; margin-right: 24px; white-space: nowrap;
+    }
+    .pt-nav-brand-dots {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 3px; width: 18px; height: 18px;
+    }
+    .pt-nav-brand-dots span { background: var(--navy-mid); border-radius: 2px; display: block; }
+    .pt-nav-brand-dots span:nth-child(2),
+    .pt-nav-brand-dots span:nth-child(3) { background: var(--gold); }
+
+    .pt-nav-chips { display: flex; gap: 4px; flex: 1; }
+    .pt-nav-chip {
+        display: flex; align-items: center; gap: 5px;
+        padding: 5px 12px; border-radius: 20px;
+        font-size: 12px; font-weight: 600; color: var(--muted);
+        cursor: pointer; border: none; background: none;
+        transition: background .15s, color .15s;
+        text-decoration: none; white-space: nowrap; font-family: 'Montserrat', sans-serif;
+    }
+    .pt-nav-chip:hover, .pt-nav-chip.active {
+        background: var(--navy-pale); color: var(--navy-mid);
+        text-decoration: none;
+    }
+    .pt-nav-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .pt-nav-badge-btn {
+        position: relative; width: 34px; height: 34px; border-radius: 50%;
+        border: none; background: var(--navy-pale); color: var(--navy-mid);
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: background .15s; text-decoration: none;
+    }
+    .pt-nav-badge-btn:hover { background: var(--navy-light); }
+    .pt-nav-badge-btn .badge {
+        position: absolute; top: 2px; right: 2px;
+        min-width: 16px; height: 16px; padding: 0 4px;
+        border-radius: 8px; background: var(--rose); color: #fff;
+        font-size: 9px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    .pt-avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--navy-mid), var(--violet));
+        color: #fff; font-size: 12px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; border: none; position: relative;
+        font-family: 'Montserrat', sans-serif;
+    }
+    .pt-dd-wrap { position: relative; }
+    .pt-dd-menu {
+        position: fixed; top: calc(var(--nav-h) + 4px); right: 16px;
+        background: var(--white); border: 1px solid var(--border);
+        border-radius: var(--radius); box-shadow: 0 8px 32px rgba(30,10,60,.15);
+        min-width: 200px; padding: 6px 0; z-index: 99999; display: none;
+        animation: ddFade .15s ease;
+    }
+    .pt-dd-menu.open { display: block; }
+    @keyframes ddFade { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .pt-dd-header { padding: 10px 14px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+    .pt-dd-header-name { font-weight: 700; font-size: 13px; color: var(--navy); }
+    .pt-dd-header-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .pt-dd-item {
+        display: flex; align-items: center; gap: 9px; padding: 8px 14px;
+        color: var(--text); text-decoration: none; font-size: 12.5px; font-weight: 500;
+        cursor: pointer; transition: background .12s; border: none; background: none;
+        width: 100%; text-align: left; font-family: 'Montserrat', sans-serif;
+    }
+    .pt-dd-item:hover { background: var(--navy-pale); color: var(--navy-mid); text-decoration: none; }
+    .pt-dd-item.danger { color: var(--rose); }
+    .pt-dd-item.danger:hover { background: var(--rose-d); }
+    .pt-dd-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ── Page layout ───────────────────────────────────────────────────────── */
+    .pt-page-wrap {
+        margin-top: var(--nav-h);
+        padding: 0;
+    }
+
+    /* ── Document toolbar (verytop) ────────────────────────────────────────── */
+    #verytop.navbar {
+        background: rgba(255,255,255,.95) !important;
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border) !important;
+        border-radius: 0 !important;
+        padding: 8px 16px !important;
+        position: sticky;
+        top: var(--nav-h);
+        z-index: 1040;
+        box-shadow: 0 1px 6px rgba(30,10,60,.06) !important;
+    }
+    #verytop .navbar-brand h3 {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: var(--navy) !important;
+        margin: 0 !important;
+    }
+    /* Restyle all action buttons in verytop */
+    #verytop .btn-outline-primary {
+        border-color: #ede9fe !important; background: var(--violet-d) !important;
+        color: #5b21b6 !important; border-radius: 8px !important;
+        font-size: 11.5px !important; font-weight: 600 !important;
+        padding: 4px 12px !important;
+    }
+    #verytop .btn-outline-primary:hover {
+        background: var(--violet) !important; color: #fff !important; border-color: var(--violet) !important;
+    }
+    #verytop .btn-outline-success {
+        border-color: #a7f3d0 !important; background: #f0fdf4 !important;
+        color: #047857 !important; border-radius: 8px !important;
+        font-size: 11.5px !important; font-weight: 600 !important;
+        padding: 4px 12px !important;
+    }
+    #verytop .btn-outline-success:hover {
+        background: #047857 !important; color: #fff !important; border-color: #047857 !important;
+    }
+    #verytop .btn-secondary {
+        background: #f3f4f6 !important; border-color: var(--border) !important;
+        color: var(--muted) !important; border-radius: 8px !important;
+        font-size: 11.5px !important; font-weight: 600 !important;
+        padding: 4px 12px !important;
+    }
+    #verytop .dropdown-menu {
+        border-radius: 10px !important; border-color: var(--border) !important;
+        box-shadow: 0 8px 24px rgba(30,10,60,.12) !important; padding: 4px 0 !important;
+    }
+    #verytop .dropdown-item { font-size: 12.5px !important; font-weight: 500 !important; padding: 7px 14px !important; }
+    #verytop .dropdown-item:hover { background: var(--navy-pale) !important; color: var(--navy-mid) !important; }
+
+    /* ── Document card ─────────────────────────────────────────────────────── */
+    #docpanel { border-radius: var(--radius) !important; border: 1.5px solid var(--border) !important; overflow: hidden; }
+    #docPanelHeader {
+        background: var(--navy) !important; color: #fff !important;
+        font-size: 12px !important; font-weight: 700 !important;
+        letter-spacing: .05em !important; padding: 10px 16px !important;
+    }
+    #templatediv {
+        border-radius: 0 !important; background: #fff !important;
+        border-color: var(--border) !important;
+    }
+    .dismissOnsiteDocumentButton {
+        border-color: #ede9fe !important; background: var(--violet-d) !important;
+        color: #5b21b6 !important; border-radius: 8px !important;
+        font-size: 11.5px !important; font-weight: 600 !important;
+    }
+    .dismissOnsiteDocumentButton:hover {
+        background: var(--violet) !important; color: #fff !important;
+    }
+    #deleteOnsiteDocumentButton { border-radius: 8px !important; font-size: 11.5px !important; font-weight: 600 !important; }
+    #cancelDeleteOnsiteDocumentButton { font-size: 11.5px !important; font-weight: 600 !important; }
+    #confirmDeleteOnsiteDocumentButton { border-radius: 8px !important; font-size: 11.5px !important; font-weight: 600 !important; }
+    
+    a.navbar-brand.mt-1.mr-1{
+        color: #000 !important;
+        font-weight: bold;
+        margin-right: 20px !important;
+    }
+
+    /* ── History table ─────────────────────────────────────────────────────── */
+    .collection.table thead th {
+        background: var(--navy) !important; color: #fff !important;
+        font-size: 11px !important; font-weight: 700 !important;
+        letter-spacing: .05em !important; border: none !important;
+    }
+    .collection.table tbody tr:hover { background: var(--navy-pale) !important; }
+    .history-btn {
+        border-color: #a7f3d0 !important; background: #f0fdf4 !important;
+        color: #047857 !important; border-radius: 8px !important;
+        font-size: 11px !important; font-weight: 600 !important;
+    }
+    .history-btn:hover { background: #047857 !important; color: #fff !important; }
+    .fa.fa-sync.fa-lg{ color: #9588e8 !important}
+
+    /* ── Nav pills overrides (original class preserved) ───────────────────── */
+    .nav-pills-ovr > li > a {
+        border: 1px solid !important; border-radius: .25rem !important;
+    }
+    .container-xl { padding-top: 16px !important; }
+
+    @media print {
+        #pt-nav, #verytop { display: none !important; }
+        .pt-page-wrap { margin-top: 0 !important; }
+        #templatecontent { width: 1220px; }
+    }
+    @media (max-width: 768px) {
+        .pt-nav-chips { display: none; }
+        #pt-nav { padding: 0 12px; }
+    }
+    </style>
+</head>
+
+<body class="p-0 m-0">
+
+<!-- ══ MDITek Navigation Bar ════════════════════════════════════════════════ -->
+<?php
+// Gather data needed for nav
+$nav_pid      = $pid;
+$nav_webroot  = $GLOBALS['web_root'];
+$nav_username = $_SESSION['portal_username'] ?? '';
+$nav_fname    = $_SESSION['ptName'] ?? '';
+// Build initials from session ptName (format "Firstname Lastname")
+$nav_parts    = explode(' ', trim($nav_fname));
+$nav_initials = strtoupper(substr($nav_parts[0] ?? 'P', 0, 1) . substr($nav_parts[1] ?? '', 0, 1));
+$nav_fullname = $nav_fname;
+$nav_msgs_url = $nav_webroot . '/portal/messaging/messages.php';
+// Message count — direct SQL (getPortalPatientNotes not available in Savant context)
+$nav_newcnt   = 0;
+$_nav_res = sqlStatement(
+    "SELECT COUNT(*) AS cnt FROM onsite_mail
+     WHERE owner = ? AND message_status = 'New' AND deleted != 1",
+    [$nav_username]
+);
+if ($_nav_row = sqlFetchArray($_nav_res)) {
+    $nav_newcnt = (int)$_nav_row['cnt'];
+}
+?>
+<nav id="pt-nav">
+    <a class="pt-nav-brand" href="<?php echo attr($nav_webroot); ?>/portal/home.php">
+        <div class="pt-nav-brand-dots">
+            <span></span><span></span><span></span><span></span>
+        </div>
+        MDITek
+    </a>
+    <div class="pt-nav-chips">
+        <a class="pt-nav-chip" href="<?php echo attr($nav_webroot); ?>/portal/home.php">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+        </a>
+        <?php if (!empty($GLOBALS['allow_portal_appointments'])): ?>
+        <a style="display:none" class="pt-nav-chip" href="<?php echo attr($nav_webroot); ?>/portal/home.php#appointmentcard">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Appointments
+        </a>
+        <?php endif; ?>
+        <a style="display:none" class="pt-nav-chip" href="<?php echo attr($nav_msgs_url); ?>">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Messages
+        </a>
+        <a style="display:none" class="pt-nav-chip active" href="<?php echo attr($nav_webroot); ?>/portal/patient/onsitedocuments?pid=<?php echo attr($nav_pid); ?>">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Documents
+        </a>
+        <?php if (!empty($GLOBALS['allow_portal_chat'])): ?>
+        <a class="pt-nav-chip" href="<?php echo attr($nav_webroot); ?>/portal/messaging/secure_chat.php">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Chat
+        </a>
+        <?php endif; ?>
+        <?php if (!empty($GLOBALS['portal_two_ledger']) || !empty($GLOBALS['portal_two_payments'])): ?>
+        <a class="pt-nav-chip" href="<?php echo attr($nav_webroot); ?>/portal/home.php#ledgercard">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Billing
+        </a>
+        <?php endif; ?>
+    </div>
+    <div class="pt-nav-right">
+        <a href="<?php echo attr($nav_msgs_url); ?>" class="pt-nav-badge-btn" title="Messages">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <?php if ($nav_newcnt > 0): ?><span class="badge"><?php echo (int)$nav_newcnt; ?></span><?php endif; ?>
+        </a>
+        <div class="pt-dd-wrap">
+            <button class="pt-avatar" id="pt-avatar-btn" onclick="ptToggleDD()" title="Account">
+                <?php echo text($nav_initials); ?>
+            </button>
+            <div class="pt-dd-menu" id="pt-user-dd">
+                <div class="pt-dd-header">
+                    <div class="pt-dd-header-name"><?php echo text($nav_fullname); ?></div>
+                    <div class="pt-dd-header-sub"><?php echo text($nav_username); ?></div>
+                </div>
+                <a class="pt-dd-item" href="<?php echo attr($nav_webroot); ?>/portal/patient/patientdata?pid=<?php echo attr($nav_pid); ?>">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    My Profile
+                </a>
+                <a class="pt-dd-item" href="<?php echo attr($nav_msgs_url); ?>">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    My Messages
+                    <?php if ($nav_newcnt > 0): ?><span style="margin-left:auto;background:var(--rose);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700"><?php echo (int)$nav_newcnt; ?></span><?php endif; ?>
+                </a>
+                <a class="pt-dd-item active" href="<?php echo attr($nav_webroot); ?>/portal/patient/onsitedocuments?pid=<?php echo attr($nav_pid); ?>">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    My Documents
+                </a>
+                <?php if (!empty($GLOBALS['allow_portal_appointments'])): ?>
+                <a class="pt-dd-item" href="<?php echo attr($nav_webroot); ?>/portal/home.php#appointmentcard">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    My Appointments
+                </a>
+                <?php endif; ?>
+                <div class="pt-dd-divider"></div>
+                <a class="pt-dd-item danger" href="<?php echo attr($nav_webroot); ?>/portal/logout.php">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="pt-page-wrap">
+<script>
+        <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4-alternate.js.php'); ?>
+        $LAB.script("<?php echo $GLOBALS['web_root']; ?>/portal/patient/scripts/app/onsitedocuments.js?v=<?php echo $GLOBALS['v_js_includes']; ?>").wait().script(
+            "<?php echo $GLOBALS['web_root']; ?>/portal/patient/scripts/app/onsiteportalactivities.js?v=<?php echo $GLOBALS['v_js_includes']; ?>").
+        wait(function () {
+            page.init();
+            pageAudit.init();
+            if (isPortal) {
+                $('#Help').on('click', function (e) {
+                    e.preventDefault();
+                    $(".helpHide").addClass("d-none");
+                });
+                $("#Help").click();
+                $(".helpHide").addClass("d-none");
+
+                $('#showNav').on('click', () => {
+                    let menuMsg;
+                    if($(parent.document.getElementById('topNav')).is('.collapse:not(.show)')) {
+                        menuMsg = xl("Hide Top Menu");
+                    } else {
+                        menuMsg = xl("Show Top Menu");
+                    }
+                    document.getElementById("showNav").innerHTML = menuMsg;
+                    parent.document.getElementById('topNav').classList.toggle('collapse');
+                });
+            }
+            console.log('init done template');
+
+            setTimeout(function () {
+                if (!page.isInitialized) {
+                    page.init();
+                    if (!pageAudit.isInitialized) {
+                        pageAudit.init();
+                    }
+                }
+            }, 2000);
+        });
+
+        function printaDocHtml(divName) {
+            page.updateModel();
+            setTimeout("flattenDocument();", 4000);
+            divName = 'templatediv';
+            let printContents = document.getElementById(divName).innerHTML;
+            let originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            location.reload();
+        }
+
+        function printaDoc(divName) {
+            // We'll return to the same editing state as before print
+            // In dashboard document is already flatten to prevent
+            // auditor from changing patient entries!
+            if (page.isQuestionnaire && !isPortal) {
+                url = webroot_url +
+                    "/interface/forms/questionnaire_assessments/patient_portal.php" +
+                    "?formid=" + encodeURIComponent(page.encounterFormId);
+                fetch(url).then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network Error.');
+                    }
+                    return response.json()
+                }).then(content => {
+                    if (content) {
+                        let docid = document.getElementById('docid').value;
+                        fetchPdf(divName, docid, content);
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert(error);
+                });
+            } else {
+                let docid = document.getElementById('docid').value;
+                fetchPdf(divName, docid);
+            }
+        }
+
+        function fetchPdf(divName, docid, printContents = null) {
+            let csrf_token_js = <?php echo js_escape(CsrfUtils::collectCsrfToken('doc-lib')); ?>;
+            top.restoreSession();
+            if (document.getElementById('tempFrame')) {
+                let killFrame = document.getElementById('tempFrame');
+                killFrame.parentNode.removeChild(killFrame);
+            }
+            if (!printContents) {
+                printContents = document.getElementById(divName).innerHTML;
+            }
+            request = new FormData;
+            request.append("handler", "fetch_pdf");
+            request.append("docid", docid);
+            request.append("content", printContents);
+            request.append("csrf_token_form", csrf_token_js);
+            fetch(webroot_url + "/portal/lib/doc_lib.php", {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: request
+            }).then((response) => {
+                if (response.status !== 200) {
+                    console.log('Background Service start failed. Status Code: ' + response.status);
+                }
+                return response.text();
+            }).then((base64) => {
+                const binary = atob(base64.replace(/\s/g, ''));
+                const len = binary.length;
+                const buffer = new ArrayBuffer(len);
+                const view = new Uint8Array(buffer);
+                for (let i = 0; i < len; i++) {
+                    view[i] = binary.charCodeAt(i);
+                }
+                const blob = new Blob([view], {type: "application/pdf"});
+                const url = URL.createObjectURL(blob);
+                let iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.width = '0';
+                iframe.height = '0';
+                iframe.id = 'tempFrame';
+                document.body.appendChild(iframe);
+                iframe.onload = function() {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                }
+                // write the content
+                iframe.src = url;
+            }).catch(function(error) {
+                console.log('PHP PDF Background Service Request failed: ', error);
+                return false;
+            });
+        }
+
+        function templateText(el) {
+            $(el).data('textvalue', $(el).val());
+            $(el).attr("data-textvalue", $(el).val())
+            return false;
+        }
+
+        function templateCheckMark(el) {
+            if ($(el).data('value') === 'Yes') {
+                $(el).data('value', 'No');
+                $(el).attr('data-value', 'No');
+            } else {
+                $(el).data('value', 'Yes');
+                $(el).attr('data-value', 'Yes');
+            }
+            return false;
+        }
+
+        function templateRadio(el) {
+            var rid = $(el).data('id')
+            $('#rgrp' + rid).data('value', $(el).val());
+            $('#rgrp' + rid).attr('data-value', $(el).val());
+            $(el).prop('checked', true)
+            return false;
+        }
+
+        function tfTemplateRadio(el) {
+            var rid = $(el).data('id')
+            $('#tfrgrp' + rid).data('value', $(el).val());
+            $('#tfrgrp' + rid).attr('data-value', $(el).val());
+            $(el).prop('checked', true);
+            return false;
+        }
+
+        function replaceTextInputs() {
+            $('.templateInput').each(function () {
+                var rv = $(this).data('textvalue');
+                $(this).replaceWith(jsText(rv));
+            });
+        }
+
+        function replaceRadioValues() {
+            $('.ynuGroup').each(function () {
+                var gid = $(this).data('id');
+                var grpid = $(this).prop('id');
+                var rv = $('input:radio[name="ynradio' + jsAttr(gid) + '"]:checked').val();
+                $(this).replaceWith(rv);
+            });
+
+            $('.tfuGroup').each(function () {
+                var gid = $(this).data('id');
+                var grpid = $(this).prop('id');
+                var rv = $('input:radio[name="tfradio' + jsAttr(gid) + '"]:checked').val();
+                $(this).replaceWith(rv);
+            });
+        }
+
+        function replaceCheckMarks() {
+            $('.checkMark').each(function () {
+                var ckid = $(this).data('id');
+                var v = $('#' + ckid).data('value');
+                if (v === 'Yes')
+                    $(this).replaceWith('[\u2713]')
+                else {
+                    $(this).replaceWith("[ ]")
+                }
+            });
+        }
+
+        function restoreTextInputs() {
+            $('.templateInput').each(function () {
+                var rv = $(this).data('textvalue');
+                $(this).val(rv)
+            });
+        }
+
+        function restoreRadioValues() {
+            $('.ynuGroup').each(function () {
+                var gid = $(this).data('id');
+                var grpid = $(this).prop('id');
+                var value = $(this).data('value');
+                $("input[name=ynradio" + gid + "][value='" + value + "']").prop('checked', true);
+            });
+
+            $('.tfuGroup').each(function () {
+                var gid = $(this).data('id');
+                var grpid = $(this).prop('id');
+                var value = $(this).data('value');
+                $("input[name=tfradio" + gid + "][value='" + value + "']").prop('checked', true);
+            });
+        }
+
+        function restoreCheckMarks() {
+            $('.checkMark').each(function () {
+                var ckid = $(this).data('id');
+                if ($('#' + ckid).data('value') === 'Yes')
+                    $('#' + ckid).prop('checked', true);
+                else
+                    $('#' + ckid).prop('checked', false);
+            });
+        }
+
+        function replaceSignatures() {
+            $('.signature').each(function () {
+                let type = $(this).data('type');
+                if ($(this).attr('src') !== signhere && $(this).attr('src')) {
+                    $(this).removeAttr('data-action');
+                }
+                if (!isPortal) {
+                    $(this).attr('data-user', cuser);
+                }
+            });
+        }
+
+        function flattenDocument() {
+            replaceCheckMarks();
+            replaceRadioValues();
+            replaceTextInputs();
+            replaceSignatures();
+        }
+
+        function restoreDocumentEdits() {
+            restoreCheckMarks();
+            restoreRadioValues();
+            restoreTextInputs();
+        }
+    </script>
+    <div class="container-xl px-1">
+        <nav id="verytop" class="navbar navbar-expand-lg navbar-light bg-light px-1 pt-3 pb-1 m-0 sticky-top" style="z-index:1030;">
+            <a class="navbar-brand mt-1 mr-1">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle;margin-right:6px;color:var(--navy-mid);">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="var(--violet-d)" stroke="var(--navy-mid)"/>
+                    <polyline points="14 2 14 8 20 8" stroke="var(--navy-mid)"/>
+                    <line x1="8" y1="13" x2="16" y2="13" stroke="var(--navy-mid)" stroke-linecap="round"/>
+                    <line x1="8" y1="17" x2="13" y2="17" stroke="var(--navy-mid)" stroke-linecap="round"/>
+                </svg><?php echo xlt("Document Actions") ?></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topmenu" aria-controls="topmenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="topmenu" class="collapse navbar-collapse">
+                <ul class="navbar-nav navCollapse mr-auto">
+                    <!-- Sticky actions toolbar -->
+                    <div class='helpHide d-none'>
+                        <ul class="navbar-nav">
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="signTemplate" href="#openSignModal" data-toggle="modal" data-backdrop="true" data-target="#openSignModal" data-type="patient-signature"><?php echo xlt('Edit Signature'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="saveTemplate" href="#"><?php echo xlt('Save'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="printTemplate" href="javascript:" onclick="printaDoc('templatecontent');"><?php echo xlt('Print'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="submitTemplate" href="#"><?php echo xlt('Download'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="sendTemplate" href="#"><?php echo xlt('Submit Document'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="chartTemplate" href="#"><?php echo xlt('Chart to') . ' ' . text($catname); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="downloadTemplate" href="#"><?php echo xlt('Download'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link btn btn-outline-primary" id="chartHistory" href="#"><?php echo xlt('Chart History'); ?></a></li>
+                        </ul>
+                    </div>
+                    <?php if (!empty($is_module) || !empty($is_portal)) { ?>
+                        <div class="dropdown mb-1" style="margin-top:6px;">
+                            <a class="dropdown-toggle nav-link btn btn-outline-success text-success" href="#" role="button" id="dropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <?php echo xlt('Select Documents') ?>
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenu">
+                                <?php echo $templateService->renderPortalTemplateMenu($pid, $cuser, true); ?>
+                            </div>
+                        </div>
+                    <?php } ?>
+                    <li class='nav-item mb-1'>
+                        <a class='nav-link text-success btn btn-outline-success' onclick="page.handleHistoryView()">
+                            <?php echo xlt('History') ?>
+                            <i class="history-direction ml-1 fa fa-arrow-down"></i>
+                        </a>
+                    </li>
+                    <?php if (empty($is_module)) { ?>
+                        <li class="nav-item mb-1">
+                            <a id="Help" class="nav-link text-primary btn btn-outline-primary d-none" onclick='page.newDocument(cpid, cuser, "Help", help_id);'><?php echo xlt('Help'); ?></a>
+                        </li>
+                    <?php } else { ?>
+                        <li class="nav-item mb-1">
+                            <a class="nav-link text-danger btn btn-secondary" id="a_docReturn" href="#" onclick='window.location.replace("<?php echo $referer ?>")'><?php echo xlt('Return'); ?></a>
+                        </li>
+                    <?php } ?>
+                    <li class='nav-item mb-1'>
+                        <a class='nav-link btn btn-secondary' data-toggle='tooltip' title='Refresh' id='refreshPage' href='javascript:' onclick='window.location.reload()'> <span class='fa fa-sync fa-lg'></span></a>
+                    </li>
+                    <li class='nav-item mb-1'>
+                        <a id='showNav' class='nav-link btn btn-secondary'><span class='navbar-toggler-icon mr-1'></span><?php echo xlt('Top Menu'); ?></a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="d-flex flex-row justify-content-center">
+            <!-- Pending documents left menu Deprecated and removed 01/13/22 -->
+            <div class="clearfix" id="topnav">
+                <div id="collectionAlert"></div>
+            </div>
+            <!-- Right editor container -->
+            <div id="editorContainer" class="d-flex flex-column w-100 h-auto">
+                <!-- document editor and action toolbar template -->
+                <script type="text/template" id="onsiteDocumentModelTemplate">
+                    <div class="card m-0 p-0" id="docpanel">
+                        <!-- Document edit container -->
+                        <span>
+                            <button id="dismissOnsiteDocumentButtonTop" class="dismissOnsiteDocumentButton btn btn-outline-primary float-right m-1" onclick="window.location.reload()"><?php echo xlt('Dismiss Form'); ?></button>
+                        </span>
+                        <header class="card-header bg-dark text-light helpHide" id='docPanelHeader'><?php echo xlt('Editing'); ?></header>
+                        <!-- editor form -->
+                        <form class="container-xl p-0" id='template' name='template' role="form" action="./../lib/doc_lib.php" method="POST">
+                            <div id="templatediv" class="card-body border overflow-auto">
+                                <div id="templatecontent" class="template-body">
+                                    <div class="text-center overflow-hidden"><i class="fa fa-circle-notch fa-spin fa-2x ml-auto"></i></div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="csrf_token_form" id="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken('doc-lib')); ?>" />
+                            <input type="hidden" name="content" id="content" value="" />
+                            <input type="hidden" name="cpid" id="cpid" value="" />
+                            <input type="hidden" name="docid" id="docid" value="" />
+                            <input type='hidden' name='template_id' id='template_id' value='' />
+                            <input type="hidden" name="handler" id="handler" value="download" />
+                            <input type="hidden" name="status" id="status" value="Open" />
+                        </form>
+                        <div class="clearfix">
+                            <span>
+                                <button id="dismissOnsiteDocumentButton" class="dismissOnsiteDocumentButton btn btn-outline-primary float-right m-1" onclick="window.location.reload()"><?php echo xlt('Dismiss Form'); ?></button>
+                            </span>
+                            <!-- delete button is a separate form to prevent enter key from triggering a delete-->
+                            <form id="deleteOnsiteDocumentButtonContainer" class="form-inline" onsubmit="return false;">
+                                <fieldset>
+                                    <div class="form-group">
+                                        <label class="col-form-label"></label>
+                                        <div class="controls">
+                                            <button id="deleteOnsiteDocumentButton" class="btn btn-sm btn-danger"><i class="icon-trash icon-white"></i><?php echo xlt('Delete Document'); ?></button>
+                                            <span id="confirmDeleteOnsiteDocumentContainer">
+                                                <button id="cancelDeleteOnsiteDocumentButton" class="btn btn-link btn-sm"><?php echo xlt('Cancel'); ?></button>
+                                                <button id="confirmDeleteOnsiteDocumentButton" class="btn btn-sm btn-danger"><?php echo xlt('Confirm'); ?></button>
+                                          </span>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </form>
+                        </div>
+                </script>
+                <div id="onsiteDocumentModelContainer" class="modelContainer">
+                    <!-- rendered edit document and action toolbar template -->
+                </div>
+            </div><!-- close flex right-->
+        </div><!-- close flex row -->
+
+        <!-- Now history table container template -->
+        <script type="text/template" id="onsiteDocumentCollectionTemplate">
+            <div class="table-responsive pt-3">
+                <h4 class="text-sm-center"><?php echo xlt('Your Document History') ?><small> (Click on label to sort.)</small></h4>
+                <table class="collection table table-sm table-hover">
+                    <thead class='thead-dark'>
+                    <tr class='cursor-pointer'>
+                        <th scope="col" id="header_Id"><?php echo xlt('Id'); ?><% if (page.orderBy == 'Id') { %> <i class='icon-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                        <th scope="col" id="header_DocType"><?php echo xlt('Document'); ?><% if (page.orderBy == 'DocType') { %> <i class='fa fa-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                        <th scope="col" id="header_CreateDate"><?php echo xlt('Create Date'); ?><% if (page.orderBy == 'CreateDate') { %> <i class='fa fa-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                        <th scope="col" id="header_ReviewDate"><?php echo xlt('Reviewed Date'); ?><% if (page.orderBy == 'ReviewDate') { %> <i class='fa fa-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                        <th scope="col" id="header_DenialReason"><?php echo xlt('Review Status'); ?><% if (page.orderBy == 'DenialReason') { %> <i class='fa fa-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                        <th scope="col" id="header_PatientSignedStatus"><?php echo xlt('Signed'); ?><% if (page.orderBy == 'PatientSignedStatus') { %> <i class='fa fa-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                        <th scope="col" id="header_PatientSignedTime"><?php echo xlt('Signed Date'); ?><% if (page.orderBy == 'PatientSignedTime') { %> <i class='fa fa-arrow-<%= page.orderDesc ? ' up' : 'down' %>' /><% } %></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% items.each(function(item) {  %>
+                    <tr id="<%= _.escape(item.get('id')) %>">
+                        <th scope="row"><%= _.escape(item.get('id') || '') %></th>
+                        <td>
+                            <button class='btn btn-sm btn-outline-success history-btn'><%= _.escape(item.get('docType') || '') %></button>
+                        </td>
+                        <td><%if (item.get('createDate')) { %><%= item.get('createDate') %><% } else { %>NULL<% } %></td>
+                        <td><%if (item.get('reviewDate') > '1969-12-31 24') { %><%= item.get('reviewDate') %><% } else { %>Pending<% } %></td>
+                        <td><%= _.escape(item.get('denialReason') || 'Pending') %></td>
+                        <td><%if (item.get('patientSignedStatus')=='1') { %><%= 'Yes' %><% } else { %>No<% } %></td>
+                        <td><%if (item.get('patientSignedTime') > '1969-12-31 24') { %><%= item.get('patientSignedTime') %><% } else { %>Pending<% } %></td>
+                    </tr>
+                    <% }); %>
+                    </tbody>
+                </table>
+                <%= view.getPaginationHtml(page) %>
+            </div>
+            </div>
+        </script>
+        <div class="container-lg px-3 pt-3 historyHide d-none" id="historyTable">
+            <div id="onsiteDocumentCollectionContainer" class="collectionContainer"><!-- rendered history template --></div>
+        </div>
+    </div>
+    <?php
+    // footer close body html
+    //$this->display('_Footer.tpl.php');
+    ?>
+    </div><!-- /.pt-page-wrap -->
+    <script>
+    function ptToggleDD() { document.getElementById('pt-user-dd').classList.toggle('open'); }
+    document.addEventListener('click', function(e) {
+        var dd = document.getElementById('pt-user-dd');
+        var btn = document.getElementById('pt-avatar-btn');
+        if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) dd.classList.remove('open');
+    });
+    </script>
+    </div><!-- /.pt-page-wrap -->
+    <script>
+    function ptToggleDD() {
+        document.getElementById('pt-user-dd').classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+        var dd  = document.getElementById('pt-user-dd');
+        var btn = document.getElementById('pt-avatar-btn');
+        if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) {
+            dd.classList.remove('open');
+        }
+    });
+    </script>

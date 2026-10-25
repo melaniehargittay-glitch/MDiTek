@@ -1,0 +1,955 @@
+{**
+* Review of systems form
+*
+* @package   OpenEMR
+* @link      http://www.open-emr.org
+* @author    Brady Miller <brady.g.miller@gmail.com>
+* @copyright Copyright (c) 2017-2019 Brady Miller <brady.g.miller@gmail.com>
+* @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+*}
+<html>
+<head>
+
+<title>{xl t='Review Of Systems'|text}</title>
+
+{headerTemplate}
+
+<style>
+    :root {
+        --ros-indigo: #4F46E5;
+        --ros-indigo-dark: #4338CA;
+        --ros-bg: #F5F6FA;
+        --ros-card: #FFFFFF;
+        --ros-border: #E5E7EB;
+        --ros-text: #1F2937;
+        --ros-muted: #6B7280;
+        --ros-yes: #D97706;
+        --ros-yes-bg: #FFFBEB;
+        --ros-no: #16A34A;
+        --ros-no-bg: #F0FDF4;
+        --ros-na: #6B7280;
+        --ros-na-bg: #F3F4F6;
+    }
+
+    body {
+        background: var(--ros-bg) !important;
+    }
+
+    /* ---------- Page header ---------- */
+    .ros-page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, var(--ros-indigo) 0%, #6D28D9 100%);
+        border-radius: 14px;
+        padding: 22px 28px;
+        margin-bottom: 20px;
+        color: #fff;
+        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);
+    }
+    .ros-page-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: -0.01em;
+    }
+    .ros-page-header p {
+        margin: 4px 0 0;
+        color: rgba(255,255,255,0.85);
+        font-size: 0.9rem;
+    }
+    .ros-header-badge {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.35);
+        border-radius: 999px;
+        padding: 6px 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #fff;
+        white-space: nowrap;
+    }
+
+    /* ---------- Section cards ---------- */
+    fieldset.ros-section {
+        background: var(--ros-card);
+        border: 1px solid var(--ros-border);
+        border-radius: 14px;
+        padding: 22px 26px 26px;
+        margin: 0 0 18px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        transition: box-shadow 0.15s ease;
+    }
+    fieldset.ros-section:hover {
+        box-shadow: 0 4px 14px rgba(16, 24, 40, 0.07);
+    }
+
+    legend.ros-legend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: auto;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--ros-text);
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--ros-border);
+    }
+    .ros-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        border-radius: 10px;
+        background: var(--accent-bg, #EEF2FF);
+        color: var(--accent, #4F46E5);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    .ros-legend-text {
+        line-height: 1.2;
+    }
+
+    /* ---------- Field grid ---------- */
+    .ros-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 4px 22px;
+        width: 100%;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+    }
+    .ros-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px 0;
+        margin: 0;
+        border-bottom: 1px dashed #EEF0F3;
+    }
+    .ros-grid .ros-field:nth-last-child(-n+3) {
+        border-bottom: 1px dashed #EEF0F3;
+    }
+
+    .ros-field label.col-form-label {
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: var(--ros-text);
+        padding: 0 !important;
+        margin: 0;
+    }
+
+    /* ---------- Radio pills ---------- */
+    .ros-options {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .ros-options label {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px !important;
+        margin: 0 !important;
+        border-radius: 999px;
+        border: 1px solid var(--ros-border);
+        background: #FAFAFA;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--ros-muted);
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.12s ease;
+    }
+    .ros-options label:hover {
+        border-color: var(--ros-indigo);
+        color: var(--ros-indigo);
+    }
+    .ros-options input[type="radio"] {
+        margin: 0 !important;
+        accent-color: var(--ros-indigo);
+        width: 13px;
+        height: 13px;
+    }
+    /* Color-code by position: N/A, YES, NO */
+    .ros-options label:nth-of-type(1):has(input:checked) {
+        background: var(--ros-na-bg);
+        border-color: var(--ros-na);
+        color: var(--ros-na);
+    }
+    .ros-options label:nth-of-type(2):has(input:checked) {
+        background: var(--ros-yes-bg);
+        border-color: var(--ros-yes);
+        color: var(--ros-yes);
+    }
+    .ros-options label:nth-of-type(3):has(input:checked) {
+        background: var(--ros-no-bg);
+        border-color: var(--ros-no);
+        color: var(--ros-no);
+    }
+
+    /* ---------- Footer action bar ---------- */
+    .ros-footer-bar {
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        border-top: 1px solid var(--ros-border);
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -4px 14px rgba(16, 24, 40, 0.06);
+        padding: 16px 24px;
+        margin-top: 8px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    .ros-footer-bar .btn-save {
+        background: var(--ros-indigo);
+        border-color: var(--ros-indigo);
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 9px 22px;
+    }
+    .ros-footer-bar .btn-save:hover {
+        background: var(--ros-indigo-dark);
+        border-color: var(--ros-indigo-dark);
+    }
+    .ros-footer-bar .btn-cancel {
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 9px 22px;
+    }
+
+    @media (max-width: 640px) {
+        .ros-page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .ros-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+</head>
+<body>
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col-12">
+                <div class="ros-page-header">
+                    <div>
+                        <h2>{xlt t="Review Of Systems"}</h2>
+                        <p>{xlt t="Complete review of systems. Select a response for each item."}</p>
+                    </div>
+                    <span class="ros-header-badge">{xlt t="ROS"}</span>
+                </div>
+                <form name="ros" class="form-horizontal" method="post" action="{$FORM_ACTION}/interface/forms/ros/save.php" onsubmit="return top.restoreSession()">
+                    <input type="hidden" name="csrf_token_form" value="{$CSRF_TOKEN_FORM|attr}" />
+                    <fieldset class="ros-section" style="--accent:#4F46E5;--accent-bg:#EEF2FF;">
+                        <legend class="ros-legend"><span class="ros-icon">C</span><span class="ros-legend-text">{xlt t="Constitutional"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="weight_change" class="col-form-label">{xlt t="Weight Change"}:</label>
+                                <div class="ros-options">{html_radios name="weight_change" id="weight_change" options=$form->get_options() selected=$form->get_weight_change() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="anorexia" class="col-form-label">{xlt t="Anorexia"}:</label>
+                                <div class="ros-options">{html_radios name="anorexia" id="anorexia" options=$form->get_options() selected=$form->get_anorexia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="night_sweats" class="col-form-label">{xlt t="Night Sweats"}</label>
+                                <div class="ros-options">{html_radios name="night_sweats" id="night_sweats" options=$form->get_options() selected=$form->get_night_sweats() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="heat_or_cold" class="col-form-label">{xlt t="Heat or Cold"}:</label>
+                                <div class="ros-options">{html_radios name="heat_or_cold" name="heat_or_cold" options=$form->get_options() selected=$form->get_heat_or_cold() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="weakness" class="col-form-label">{xlt t="Weakness"}</label>
+                                <div class="ros-options">{html_radios name="weakness" id="weakness" options=$form->get_options() selected=$form->get_weakness() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="fever" class="col-form-label">{xlt t="Fever"}:</label>
+                                <div class="ros-options">{html_radios name="fever" name="fever" options=$form->get_options() selected=$form->get_fever() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="insomnia" class="col-form-label">{xlt t="Insomnia"}:</label>
+                                <div class="ros-options">{html_radios name="insomnia" name="insomnia" options=$form->get_options() selected=$form->get_insomnia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="intolerance" class="col-form-label">{xlt t="Intolerance"}:</label>
+                                <div class="ros-options">{html_radios name="intolerance" id="intolerance" options=$form->get_options() selected=$form->get_intolerance() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="fatigue" class="col-form-label">{xlt t="Fatigue"}:</label>
+                                <div class="ros-options">{html_radios name="fatigue" id="fatigue" options=$form->get_options() selected=$form->get_fatigue() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="weight_change" class="col-form-label">{xlt t="Chills"}:</label>
+                                <div class="ros-options">{html_radios name="chills" id="chills" options=$form->get_options() selected=$form->get_chills() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="irritability" class="col-form-label">{xlt t="Irritability"}:</label>
+                                <div class="ros-options">{html_radios name="irritability" id="irritability" options=$form->get_options() selected=$form->get_irritability() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#7C3AED;--accent-bg:#F5F3FF;">
+                        <legend class="ros-legend"><span class="ros-icon">E</span><span class="ros-legend-text">{xlt t="Eyes"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="change_in_vision" class="col-form-label">{xlt t="Change in Vision"}:</label>
+                                <div class="ros-options">{html_radios name="change_in_vision" id="change_in_vision" options=$form->get_options() selected=$form->get_weight_change() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="irritation" class="col-form-label">{xlt t="Irritation"}:</label>
+                                <div class="ros-options">{html_radios name="irritation" id="irritation" options=$form->get_options() selected=$form->get_irritation() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="double_vision" class="col-form-label">{xlt t="Double Vision"}:</label>
+                                <div class="ros-options">{html_radios name="double_vision" id="double_vision" options=$form->get_options() selected=$form->get_double_vision() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="glaucoma_history" class="col-form-label">{xlt t="Family History of Glaucoma"}:</label>
+                                <div class="ros-options">{html_radios name="glaucoma_history" id="glaucoma_history" options=$form->get_options() selected=$form->get_glaucoma_history() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="redness" class="col-form-label">{xlt t="Redness"}:</label>
+                                <div class="ros-options">{html_radios name="redness" id="redness" options=$form->get_options() selected=$form->get_redness() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="blind_spots" class="col-form-label">{xlt t="Blind Spots"}:</label>
+                                <div class="ros-options">{html_radios name="blind_spots" id="blind_spots" options=$form->get_options() selected=$form->get_blind_spots() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="eye_pain" class="col-form-label">{xlt t="Eye Pain"}:</label>
+                                <div class="ros-options">{html_radios name="eye_pain" id="eye_pain" options=$form->get_options() selected=$form->get_eye_pain() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="excessive_tearing" class="col-form-label">{xlt t="Excessive Tearing"}:</label>
+                                <div class="ros-options">{html_radios name="excessive_tearing" id="excessive_tearing" options=$form->get_options() selected=$form->get_excessive_tearing() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="photophobia" class="col-form-label">{xlt t="Photophobia"}:</label>
+                                <div class="ros-options">{html_radios name="photophobia" id="photophobia" options=$form->get_options() selected=$form->get_photophobia() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#2563EB;--accent-bg:#EFF6FF;">
+                        <legend class="ros-legend"><span class="ros-icon">E</span><span class="ros-legend-text">{xlt t="Ears"}, {xlt t="Nose"}, {xlt t="Mouth"}, {xlt t="Throat"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="hearing_loss" class="col-form-label">{xlt t="Hearing Loss"}:</label>
+                                <div class="ros-options">{html_radios name="hearing_loss" id="hearing_loss" options=$form->get_options() selected=$form->get_hearing_loss() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="vertigo" class="col-form-label">{xlt t="Vertigo"}:</label>
+                                <div class="ros-options">{html_radios name="vertigo" id="vertigo" options=$form->get_options() selected=$form->get_vertigo() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="sore_throat" class="col-form-label">{xlt t="Sore Throat"}:</label>
+                                <div class="ros-options">{html_radios name="sore_throat" id="sore_throat" options=$form->get_options() selected=$form->get_sore_throat() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="nosebleed" class="col-form-label">{xlt t="Nosebleed"}:</label>
+                                <div class="ros-options">{html_radios name="nosebleed" options=$form->get_options() selected=$form->get_nosebleed() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="discharge" class="col-form-label">{xlt t="Discharge"}:</label>
+                                <div class="ros-options">{html_radios name="discharge" id="discharge" options=$form->get_options() selected=$form->get_discharge() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="tinnitus" class="col-form-label">{xlt t="Tinnitus"}:</label>
+                                <div class="ros-options">{html_radios name="tinnitus" id="tinnitus" options=$form->get_options() selected=$form->get_tinnitus() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="sinus_problems" class="col-form-label">{xlt t="Sinus Problems"}:</label>
+                                <div class="ros-options">{html_radios name="sinus_problems" id="sinus_problems" options=$form->get_options() selected=$form->get_sinus_problems() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="snoring" class="col-form-label">{xlt t="Snoring"}:</label>
+                                <div class="ros-options">{html_radios name="snoring" id="snoring" options=$form->get_options() selected=$form->get_snoring() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="pain" class="col-form-label">{xlt t="Pain"}:</label>
+                                <div class="ros-options">{html_radios name="pain" id="pain" options=$form->get_options() selected=$form->get_pain() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="frequent_colds" class="col-form-label">{xlt t="Frequent Colds"}:</label>
+                                <div class="ros-options">{html_radios name="frequent_colds" id="frequent_colds" options=$form->get_options() selected=$form->get_frequent_colds() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="post_nasal_drip" class="col-form-label">{xlt t="Post Nasal Drip"}:</label>
+                                <div class="ros-options">{html_radios name="post_nasal_drip" id="post_nasal_drip" options=$form->get_options() selected=$form->get_post_nasal_drip() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="apnea" class="col-form-label">{xlt t="Apnea"}:</label>
+                                <div class="ros-options">{html_radios name="apnea" id="apnea" options=$form->get_options() selected=$form->get_apnea() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#0891B2;--accent-bg:#ECFEFF;">
+                        <legend class="ros-legend"><span class="ros-icon">B</span><span class="ros-legend-text">{xlt t="Breast"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="breast_mass" class="col-form-label">{xlt t="Breast Mass"}:</label>
+                                <div class="ros-options">{html_radios name="breast_mass" id="breast_mass" options=$form->get_options() selected=$form->get_breast_mass() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="abnormal_mammogram" class="col-form-label">{xlt t="Abnormal Mammogram"}:</label>
+                                <div class="ros-options">{html_radios name="abnormal_mammogram" id="abnormal_mammogram" options=$form->get_options() selected=$form->get_abnormal_mammogram() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="breast_discharge" class="col-form-label">{xlt t="Discharge"}:</label>
+                                <div class="ros-options">{html_radios name="breast_discharge" id="breast_discharge" options=$form->get_options() selected=$form->get_breast_discharge() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="biopsy" class="col-form-label">{xlt t="Biopsy"}</label>
+                                <div class="ros-options">{html_radios name="biopsy" id="biopsy" options=$form->get_options() selected=$form->get_biopsy() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#0D9488;--accent-bg:#F0FDFA;">
+                        <legend class="ros-legend"><span class="ros-icon">R</span><span class="ros-legend-text">{xlt t="Respiratory"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="cough" class="col-form-label">{xlt t="Cough"}:</label>
+                                <div class="ros-options">{html_radios name="cough" id="cough" options=$form->get_options() selected=$form->get_cough() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="wheezing" class="col-form-label">{xlt t="Wheezing"}:</label>
+                                <div class="ros-options">{html_radios name="wheezing" id="wheezing" options=$form->get_options() selected=$form->get_wheezing() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="copd" class="col-form-label">{xlt t="COPD"}:</label>
+                                <div class="ros-options">{html_radios name="copd" id="copd" options=$form->get_options() selected=$form->get_copd() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="sputum" class="col-form-label">{xlt t="Sputum"}:</label>
+                                <div class="ros-options">{html_radios name="sputum" id="sputum" options=$form->get_options() selected=$form->get_sputum() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="hemoptsyis" class="col-form-label">{xlt t="Hemoptysis"}:</label>
+                                <div class="ros-options">{html_radios name="hemoptsyis" id="hemoptsyis" options=$form->get_options() selected=$form->get_hemoptsyis() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="shortness_of_breath" class="col-form-label">{xlt t="Shortness of Breath"}:</label>
+                                <div class="ros-options">{html_radios name="shortness_of_breath" id="shortness_of_breath" options=$form->get_options() selected=$form->get_shortness_of_breath() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="asthma" class="col-form-label">{xlt t="Asthma"}:</label>
+                                <div class="ros-options">{html_radios name="asthma" id="asthma" options=$form->get_options() selected=$form->get_asthma() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#EA580C;--accent-bg:#FFF7ED;">
+                        <legend class="ros-legend"><span class="ros-icon">C</span><span class="ros-legend-text">{xlt t="Cardiovascular"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="chest_pain" class="col-form-label">{xlt t="Chest Pain"}:</label>
+                                <div class="ros-options">{html_radios name="chest_pain" id="chest_pain" options=$form->get_options() selected=$form->get_chest_pain() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="pnd" class="col-form-label">{xlt t="PND"}:</label>
+                                <div class="ros-options">{html_radios name="pnd" id="pnd" options=$form->get_options() selected=$form->get_pnd() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="peripheal" class="col-form-label">{xlt t="Peripheral"}:</label>
+                                <div class="ros-options">{html_radios name="peripheal" id="peripheal" options=$form->get_options() selected=$form->get_peripheal() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="history_murmur" class="col-form-label">{xlt t="History of Heart Murmur"}:</label>
+                                <div class="ros-options">{html_radios name="history_murmur" id="history_murmur" options=$form->get_options() selected=$form->get_history_murmur() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="palpitation" class="col-form-label">{xlt t="Palpitation"}:</label>
+                                <div class="ros-options">{html_radios name="palpitation" id="palpitation" options=$form->get_options() selected=$form->get_palpitation() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="doe" class="col-form-label">{xlt t="DOE"}:</label>
+                                <div class="ros-options">{html_radios name="doe" id="doe" options=$form->get_options() selected=$form->get_doe() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="edema" class="col-form-label">{xlt t="Edema"}:</label>
+                                <div class="ros-options">{html_radios name="edema" id="edema" options=$form->get_options() selected=$form->get_edema() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="arrythmia" class="col-form-label">{xlt t="Arrythmia"}:</label>
+                                <div class="ros-options">{html_radios name="arrythmia" id="arrythmia" options=$form->get_options() selected=$form->get_arrythmia() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="syncope" class="col-form-label">{xlt t="Syncope"}:</label>
+                                <div class="ros-options">{html_radios name="syncope" id="syncope" options=$form->get_options() selected=$form->get_syncope() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="orthopnea" class="col-form-label">{xlt t="Orthopnea"}:</label>
+                                <div class="ros-options">{html_radios name="orthopnea" id="orthopnea" options=$form->get_options() selected=$form->get_orthopnea() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="legpain_cramping" class="col-form-label">{xlt t="Leg Pain/Cramping"}:</label>
+                                <div class="ros-options">{html_radios name="legpain_cramping" id="legpain_cramping" options=$form->get_options() selected=$form->get_legpain_cramping() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="heart_problem" class="col-form-label">{xlt t="Heart Problem"}:</label>
+                                <div class="ros-options">{html_radios name="heart_problem" id="heart_problem" options=$form->get_options() selected=$form->get_heart_problem() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#DB2777;--accent-bg:#FDF2F8;">
+                        <legend class="ros-legend"><span class="ros-icon">G</span><span class="ros-legend-text">{xlt t="Gastrointestinal"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="dysphagia" class="col-form-label">{xlt t="Dysphagia"}:</label>
+                                <div class="ros-options">{html_radios name="dysphagia" id="dysphagia" options=$form->get_options() selected=$form->get_dysphagia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="belching" class="col-form-label">{xlt t="Belching"}:</label>
+                                <div class="ros-options">{html_radios name="belching" id="belching" options=$form->get_options() selected=$form->get_belching() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="vomiting" class="col-form-label">{xlt t="Vomiting"}:</label>
+                                <div class="ros-options">{html_radios name="vomiting" id="vomiting" options=$form->get_options() selected=$form->get_vomiting() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="food_intolerance" class="col-form-label">{xlt t="Food Intolerance"}:</label>
+                                <div class="ros-options">{html_radios name="food_intolerance" id="food_intolerance" options=$form->get_options() selected=$form->get_food_intolerance() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="hematochezia" class="col-form-label">{xlt t="Hematochezia"}:</label>
+                                <div class="ros-options">{html_radios name="hematochezia" id="hematochezia" options=$form->get_options() selected=$form->get_hematochezia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="constipation" class="col-form-label">{xlt t="Constipation"}:</label>
+                                <div class="ros-options">{html_radios name="constipation" id="constipation" options=$form->get_options() selected=$form->get_constipation() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="heartburn" class="col-form-label">{xlt t="Heartburn"}:</label>
+                                <div class="ros-options">{html_radios name="heartburn" id="heartburn" options=$form->get_options() selected=$form->get_heartburn() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="flatulence" class="col-form-label">{xlt t="Flatulence"}:</label>
+                                <div class="ros-options">{html_radios name="flatulence" id="flatulence" options=$form->get_options() selected=$form->get_flatulence() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="hematemesis" class="col-form-label">{xlt t="Hematemesis"}:</label>
+                                <div class="ros-options">{html_radios name="hematemesis" id="hematemesis" options=$form->get_options() selected=$form->get_hematemesis() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="name="hepatitis" " class="col-form-label">{xlt t="H/O Hepatitis"}:</label>
+                                <div class="ros-options">{html_radios name="hepatitis" id="hepatitis" options=$form->get_options() selected=$form->get_hepatitis() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="name="changed_bowel" class="col-form-label">{xlt t="Changed Bowel"}:</label>
+                                <div class="ros-options">{html_radios name="changed_bowel" id="changed_bowel" options=$form->get_options() selected=$form->get_changed_bowel() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="bloating" class="col-form-label">{xlt t="Bloating"}:</label>
+                                <div class="ros-options">{html_radios name="bloating" id="bloating" options=$form->get_options() selected=$form->get_bloating() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="nausea" class="col-form-label">{xlt t="Nausea"}:</label>
+                                <div class="ros-options">{html_radios name="nausea" id="nausea" options=$form->get_options() selected=$form->get_nausea() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="gastro_pain" class="col-form-label">{xlt t="Pain"}:</label>
+                                <div class="ros-options">{html_radios name="gastro_pain" id="gastro_pain" options=$form->get_options() selected=$form->get_gastro_pain() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="jaundice" class="col-form-label">{xlt t="Jaundice"}:</label>
+                                <div class="ros-options">{html_radios name="jaundice" id="jaundice" options=$form->get_options() selected=$form->get_jaundice() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="diarrhea" class="col-form-label">{xlt t="Diarrhea"}:</label>
+                                <div class="ros-options">{html_radios name="diarrhea" id="diarrhea" options=$form->get_options() selected=$form->get_diarrhea() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#16A34A;--accent-bg:#F0FDF4;">
+                        <legend class="ros-legend"><span class="ros-icon">G</span><span class="ros-legend-text">{xlt t="Genitourinary"} {xlt t="General"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="polyuria" class="col-form-label">{xlt t="Polyuria"}:</label>
+                                <div class="ros-options">{html_radios name="polyuria" id="polyuria" options=$form->get_options() selected=$form->get_polyuria() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="hematuria" class="col-form-label">{xlt t="Hematuria"}:</label>
+                                <div class="ros-options">{html_radios name="hematuria" id="hematuria" options=$form->get_options() selected=$form->get_hematuria() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="incontinence" class="col-form-label">{xlt t="Incontinence"}::</label>
+                                <div class="ros-options">{html_radios name="incontinence" id="incontinence" options=$form->get_options() selected=$form->get_incontinence() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="polydypsia" class="col-form-label">{xlt t="Polydypsia"}:</label>
+                                <div class="ros-options">{html_radios name="polydypsia" id="polydypsia" options=$form->get_options() selected=$form->get_polydypsia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="frequency" class="col-form-label">{xlt t="Frequency"}:</label>
+                                <div class="ros-options">{html_radios name="frequency" id="frequency" options=$form->get_options() selected=$form->get_frequency() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="renal_stones" class="col-form-label">{xlt t="Renal Stones"}:</label>
+                                <div class="ros-options">{html_radios name="renal_stones" id="renal_stones" options=$form->get_options() selected=$form->get_renal_stones() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="dysuria" class="col-form-label">{xlt t="Dysuria"}:</label>
+                                <div class="ros-options">{html_radios name="dysuria" id="dysuria" options=$form->get_options() selected=$form->get_dysuria() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="urgency" class="col-form-label">{xlt t="Urgency"}:</label>
+                                <div class="ros-options">{html_radios name="urgency" id="urgency" options=$form->get_options() selected=$form->get_urgency() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="utis" class="col-form-label">{xlt t="UTIs"}:</label>
+                                <div class="ros-options">{html_radios name="utis" id="utis" options=$form->get_options() selected=$form->get_utis() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#4F46E5;--accent-bg:#EEF2FF;">
+                        <legend class="ros-legend"><span class="ros-icon">G</span><span class="ros-legend-text">{xlt t="Genitourinary"} {xlt t="Male"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="hesitancy" class="col-form-label">{xlt t="Hesitancy"}:</label>
+                                <div class="ros-options">{html_radios name="hesitancy" id="hesitancy" options=$form->get_options() selected=$form->get_hesitancy() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="nocturia" class="col-form-label">{xlt t="Nocturia"}:</label>
+                                <div class="ros-options">{html_radios name="nocturia" id="nocturia" options=$form->get_options() selected=$form->get_nocturia() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="dribbling" class="col-form-label">{xlt t="Dribbling"}:</label>
+                                <div class="ros-options">{html_radios name="dribbling" id="dribbling" options=$form->get_options() selected=$form->get_dribbling() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="erections" class="col-form-label">{xlt t="Erections"}:</label>
+                                <div class="ros-options">{html_radios name="erections" id="erections" options=$form->get_options() selected=$form->get_erections() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="stream" class="col-form-label">{xlt t="Stream"}:</label>
+                                <div class="ros-options">{html_radios name="stream" id="stream" options=$form->get_options() selected=$form->get_stream() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="ejaculations" class="col-form-label">{xlt t="Ejaculations"}:</label>
+                                <div class="ros-options">{html_radios name="ejaculations" id="ejaculations" options=$form->get_options() selected=$form->get_ejaculations() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#7C3AED;--accent-bg:#F5F3FF;">
+                        <legend class="ros-legend"><span class="ros-icon">G</span><span class="ros-legend-text">{xlt t="Genitourinary"} {xlt t="Female"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="g" class="col-form-label">{xlt t="Female G"}:</label>
+                                <div class="ros-options">{html_radios name="g" id="g" options=$form->get_options() selected=$form->get_g() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="lc" class="col-form-label">{xlt t="Female LC"}:</label>
+                                <div class="ros-options">{html_radios name="lc" id="lc" options=$form->get_options() selected=$form->get_lc() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="lmp" class="col-form-label">{xlt t="LMP"}:</label>
+                                <div class="ros-options">{html_radios name="lmp" id="lmp" options=$form->get_options() selected=$form->get_lmp() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="f_symptoms" class="col-form-label">{xlt t="Symptoms"}:</label>
+                                <div class="ros-options">{html_radios name="f_symptoms" id="f_symptoms" options=$form->get_options() selected=$form->get_f_symptoms() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="p" class="col-form-label">{xlt t="Female P"}:</label>
+                                <div class="ros-options">{html_radios name="p" id="p" options=$form->get_options() selected=$form->get_p() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="mearche" class="col-form-label">{xlt t="Menarche"}:</label>
+                                <div class="ros-options">{html_radios name="mearche" id="mearche" options=$form->get_options() selected=$form->get_mearche() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="f_frequency" class="col-form-label">{xlt t="Frequency"}:</label>
+                                <div class="ros-options">{html_radios name="f_frequency" id="f_frequency" options=$form->get_options() selected=$form->get_f_frequency() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="abnormal_hair_growth" class="col-form-label">{xlt t="Abnormal Hair Growth"}:</label>
+                                <div class="ros-options">{html_radios name="abnormal_hair_growth" id="abnormal_hair_growth" options=$form->get_options() selected=$form->get_abnormal_hair_growth() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="ap" class="col-form-label">{xlt t="Female AP"}:</label>
+                                <div class="ros-options">{html_radios name="ap" id="ap" options=$form->get_options() selected=$form->get_ap() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="menopause" class="col-form-label">{xlt t="Menopause"}</label>
+                                <div class="ros-options">{html_radios name="menopause" id="menopause" options=$form->get_options() selected=$form->get_menopause() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="f_flow" class="col-form-label">{xlt t="Flow"}:</label>
+                                <div class="ros-options">{html_radios name="f_flow" id="f_flow" options=$form->get_options() selected=$form->get_f_flow() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="f_hirsutism" class="col-form-label">{xlt t="F/H Female Hirsutism/Striae"}:</label>
+                                <div class="ros-options">{html_radios name="f_hirsutism" id="f_hirsutism" options=$form->get_options() selected=$form->get_f_hirsutism() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#2563EB;--accent-bg:#EFF6FF;">
+                        <legend class="ros-legend"><span class="ros-icon">M</span><span class="ros-legend-text">{xlt t="Musculoskeletal"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="joint_pain" class="col-form-label">{xlt t="Chronic Joint Pain"}:</label>
+                                <div class="ros-options">{html_radios name="joint_pain" id="joint_pain" options=$form->get_options() selected=$form->get_joint_pain() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="m_warm" class="col-form-label">{xlt t="Warm"}:</label>
+                                <div class="ros-options">{html_radios name="m_warm" id="m_warm" options=$form->get_options() selected=$form->get_m_warm() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="m_aches" class="col-form-label">{xlt t="Aches"}:</label>
+                                <div class="ros-options">{html_radios name="m_aches" id="m_aches" options=$form->get_options() selected=$form->get_m_aches() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="swelling" class="col-form-label">{xlt t="Swelling"}:</label>
+                                <div class="ros-options">{html_radios name="swelling" id="swelling" options=$form->get_options() selected=$form->get_swelling() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="m_stiffness" class="col-form-label">{xlt t="Stiffness"}:</label>
+                                <div class="ros-options">{html_radios name="m_stiffness" id="m_stiffness" options=$form->get_options() selected=$form->get_m_stiffness() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="fms" class="col-form-label">{xlt t="FMS"}:</label>
+                                <div class="ros-options">{html_radios name="fms" id="fms" options=$form->get_options() selected=$form->get_fms() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="m_redness" class="col-form-label">{xlt t="Redness"}:</label>
+                                <div class="ros-options">{html_radios name="m_redness" id="m_redness" options=$form->get_options() selected=$form->get_m_redness() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="muscle" class="col-form-label">{xlt t="Muscle"}:</label>
+                                <div class="ros-options">{html_radios name="muscle" id="muscle" options=$form->get_options() selected=$form->get_muscle() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="arthritis" class="col-form-label">{xlt t="Arthritis"}:</label>
+                                <div class="ros-options">{html_radios name="arthritis" id="arthritis" options=$form->get_options() selected=$form->get_arthritis() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#0891B2;--accent-bg:#ECFEFF;">
+                        <legend class="ros-legend"><span class="ros-icon">N</span><span class="ros-legend-text">{xlt t="Neurologic"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="loc" class="col-form-label">{xlt t="LOC"}:</label>
+                                <div class="ros-options">{html_radios name="loc" id="loc" options=$form->get_options() selected=$form->get_loc() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="tia" class="col-form-label">{xlt t="TIA"}:</label>
+                                <div class="ros-options">{html_radios name="tia" id="tia" options=$form->get_options() selected=$form->get_tia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="paralysis" class="col-form-label">{xlt t="Paralysis"}:</label>
+                                <div class="ros-options">{html_radios name="paralysis" id="paralysis" options=$form->get_options() selected=$form->get_paralysis() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="dementia" class="col-form-label">{xlt t="Dementia"}:</label>
+                                <div class="ros-options">{html_radios name="dementia" id="dementia" options=$form->get_options() selected=$form->get_dementia() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="seizures" class="col-form-label">{xlt t="Seizures"}:</label>
+                                <div class="ros-options">{html_radios name="seizures" id="seizures" options=$form->get_options() selected=$form->get_seizures() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="n_numbness" class="col-form-label">{xlt t="Numbness"}:</label>
+                                <div class="ros-options">{html_radios name="n_numbness" id="n_numbness" options=$form->get_options() selected=$form->get_n_numbness() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="intellectual_decline" class="col-form-label">{xlt t="Intellectual Decline"}:</label>
+                                <div class="ros-options">{html_radios name="intellectual_decline" id="intellectual_decline" options=$form->get_options() selected=$form->get_intellectual_decline() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="n_headache" class="col-form-label">{xlt t="Headache"}:</label>
+                                <div class="ros-options">{html_radios name="n_headache" id="n_headache" options=$form->get_options() selected=$form->get_n_headache() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="stroke" class="col-form-label">{xlt t="Stroke"}:</label>
+                                <div class="ros-options">{html_radios name="stroke" id="stroke" options=$form->get_options() selected=$form->get_stroke() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="n_weakness" class="col-form-label">{xlt t="Weakness"}:</label>
+                                <div class="ros-options">{html_radios name="n_weakness" id="n_weakness" options=$form->get_options() selected=$form->get_n_weakness() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="memory_problems" class="col-form-label">{xlt t="Memory Problems"}:</label>
+                                <div class="ros-options">{html_radios name="memory_problems" id="memory_problems" options=$form->get_options() selected=$form->get_memory_problems() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#0D9488;--accent-bg:#F0FDFA;">
+                        <legend class="ros-legend"><span class="ros-icon">S</span><span class="ros-legend-text">{xlt t="Skin"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="s_cancer" class="col-form-label">{xlt t="Cancer"}:</label>
+                                <div class="ros-options">{html_radios name="s_cancer" id="s_cancer" options=$form->get_options() selected=$form->get_s_cancer() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="s_other" class="col-form-label">{xlt t="Other"}:</label>
+                                <div class="ros-options">{html_radios name="s_other" id="s_other" options=$form->get_options() selected=$form->get_s_other() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="psoriasis" class="col-form-label">{xlt t="Psoriasis"}:</label>
+                                <div class="ros-options">{html_radios name="psoriasis" id="psoriasis" options=$form->get_options() selected=$form->get_psoriasis() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="s_disease" class="col-form-label">{xlt t="Disease"}:</label>
+                                <div class="ros-options">{html_radios name="s_disease" id="s_disease" options=$form->get_options() selected=$form->get_s_disease() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="s_acne" class="col-form-label">{xlt t="Acne"}:</label>
+                                <div class="ros-options">{html_radios name="s_acne" id="s_acne" options=$form->get_options() selected=$form->get_s_acne() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#EA580C;--accent-bg:#FFF7ED;">
+                        <legend class="ros-legend"><span class="ros-icon">P</span><span class="ros-legend-text">{xlt t="Psychiatric"}</span></legend>
+                                                <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="p_diagnosis" class="col-form-label">{xlt t="Psychiatric Diagnosis"}:</label>
+                                <div class="ros-options">{html_radios name="p_diagnosis" id="p_diagnosis" options=$form->get_options() selected=$form->get_p_diagnosis() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="anxiety" class="col-form-label">{xlt t="Anxiety"}:</label>
+                                <div class="ros-options">{html_radios name="anxiety" id="anxiety" options=$form->get_options() selected=$form->get_anxiety() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="p_medication" class="col-form-label">{xlt t="Psychiatric Medication"}:</label>
+                                <div class="ros-options">{html_radios name="p_medication" id="p_medication" options=$form->get_options() selected=$form->get_p_medication() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="social_difficulties" class="col-form-label">{xlt t="Social Difficulties"}:</label>
+                                <div class="ros-options">{html_radios name="social_difficulties" id="social_difficulties" options=$form->get_options() selected=$form->get_social_difficulties() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="depression" class="col-form-label">{xlt t="Depression"}:</label>
+                                <div class="ros-options">{html_radios name="depression" id="depression" options=$form->get_options() selected=$form->get_depression() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#DB2777;--accent-bg:#FDF2F8;">
+                        <legend class="ros-legend"><span class="ros-icon">E</span><span class="ros-legend-text">{xlt t="Endocrine"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="thyroid_problems" class="col-form-label">{xlt t="Thyroid Problems"}:</label>
+                                <div class="ros-options">{html_radios name="thyroid_problems" id="thyroid_problems" options=$form->get_options() selected=$form->get_thyroid_problems() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="diabetes" class="col-form-label">{xlt t="Diabetes"}:</label>
+                                <div class="ros-options">{html_radios name="diabetes" id="diabetes" options=$form->get_options() selected=$form->get_diabetes() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="abnormal_blood" class="col-form-label">{xlt t="Abnormal Blood Test"}:</label>
+                                <div class="ros-options">{html_radios name="abnormal_blood" id="abnormal_blood" options=$form->get_options() selected=$form->get_abnormal_blood() separator=""}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="ros-section" style="--accent:#16A34A;--accent-bg:#F0FDF4;">
+                        <legend class="ros-legend"><span class="ros-icon">H</span><span class="ros-legend-text">{xlt t="Hematologic"}/{xlt t="Allergic"}/{xlt t="Immunologic"}</span></legend>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="anemia" class="col-form-label">{xlt t="Anemia"}:</label>
+                                <div class="ros-options">{html_radios name="anemia" id="anemia" options=$form->get_options() selected=$form->get_anemia() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="allergies" class="col-form-label">{xlt t="Allergies"}:</label>
+                                <div class="ros-options">{html_radios name="allergies" id="allergies" options=$form->get_options() selected=$form->get_allergies() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="hai_status" class="col-form-label">{xlt t="HAI Status"}:</label>
+                                <div class="ros-options">{html_radios name="hai_status" id="hai_status" options=$form->get_options() selected=$form->get_hai_status() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="fh_blood_problems" class="col-form-label">{xlt t="F/H Blood Problems"}:</label>
+                                <div class="ros-options">{html_radios name="fh_blood_problems" id="fh_blood_problems" options=$form->get_options() selected=$form->get_fh_blood_problems() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="frequent_illness" class="col-form-label">{xlt t="Frequent Illness"}:</label>
+                                <div class="ros-options">{html_radios name="frequent_illness" id="frequent_illness" options=$form->get_options() selected=$form->get_frequent_illness() separator=""}</div>
+                            </div>
+                        </div>
+                        <div class="ros-grid">
+                            <div class="ros-field">
+                                <label for="bleeding_problems" class="col-form-label">{xlt t="Bleeding Problems"}:</label>
+                                <div class="ros-options">{html_radios name="bleeding_problems" id="bleeding_problems" options=$form->get_options() selected=$form->get_bleeding_problems() separator=""}</div>
+                            </div>
+                            <div class="ros-field">
+                                <label for="hiv" class="col-form-label">{xlt t="HIV"}:</label>
+                                <div class="ros-options">{html_radios name="hiv" id="hiv" options=$form->get_options() selected=$form->get_hiv() separator=""}</div>
+                            </div>
+                        </div>
+
+                    </fieldset>
+                    <div class="ros-footer-bar">
+                        <button type="button" class="btn btn-secondary btn-cancel" onclick="top.restoreSession(); location.href='{$DONT_SAVE_LINK}';">{xlt t='Cancel'}</button>
+                        <button type="submit" class="btn btn-primary btn-save" onclick="top.restoreSession();" name="Submit">{xlt t='Save'}</button>
+                        <input type="hidden" name="id" value="{$form->get_id()|attr}" />
+                        <input type="hidden" name="pid" value="{$form->get_pid()|attr}" />
+                        <input type="hidden" name="process" value="true" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
